@@ -5,7 +5,7 @@ import numpy as np
 from key_door import constants, wrapper
 
 
-class Curriculum(wrapper.Wrapper):
+class CurriculumEnv(wrapper.Wrapper):
     """Environment curriculum wrapper to change the environment spec."""
 
     def __init__(self, env, transitions: List[str]) -> None:
