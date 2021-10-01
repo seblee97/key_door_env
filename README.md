@@ -16,13 +16,15 @@ Maps are specified by a combination of an ASCII text file (with the map layout) 
 
 For instance, the ASCII and YAML snippets (below left) produce the map shown (below right). These example files can also be found under the ```tests/test_map_files```.
 
+```
 #################################
 #         K    #       R#       #
 #              #        D       #
 #              #        #       #
 #              #        #       #
 #S             D     K  #   R   #
-#################################
+#################################. 
+```
 
 TODO:
 
