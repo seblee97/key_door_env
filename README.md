@@ -76,3 +76,11 @@ The latter dictates that the output is a pixel representation of the map in the 
 ## Visualisation
 
 By installing an additional set of requirements, it is also possible to make use of a set of visualisation methods on the environment. These methods are implemented by a wrapper around the original environment class. Available functionality includes rendering a still image of the environment at a certain time, generating a video of an episode rollout, and visualising a heatmap over the map (e.g. for value functions or visitation counts).
+
+## Continual Learning and MDP Transitions
+
+As well as the visualisation wrapper, the package also includes a curriculum wrapper that allows for specification of environment transitions. To do this you can write multiple .yaml files and feed a list of yaml file paths, as well as the original environment, to the constructor of the curriculum wrapper. Calling the __next__() method on the environment will then transition the environment to the configuration specified by next .yaml file along.
+
+## Possible Future Features
+
+There are multiple features that would be useful additions to this package ranging from small tweaks like random start positions to more complex changes such as procedural generation.
