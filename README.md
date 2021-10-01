@@ -70,21 +70,3 @@ the path to the .txt file, the path to the .yaml file, and a field called "repre
 either be given as _agent_position_, or _pixel_. The former dictates that the output of the _step_ method is the state represented by an x, y 
 tuple of the agent position (for use with tabular RL in mind). 
 The latter dictates that the output is a pixel representation of the map in the form of a numpy array (for use with function approximation in mind).
-
-TODO:
-
-- Document
-- Tests
-- Sample maps
-- Plotting functions
-- Video generation functions
-- README
-
-Thoughts:
-
-- init with either path to yaml or set of python args?
-- Start position options, random, fixed, set etc.
-- Environment curriculum
-- Constants??
-- Throw error if key.door/rewrD etc in same position?
-- Throw error if key.door/rewrD etc in wall?
