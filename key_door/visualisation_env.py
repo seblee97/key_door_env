@@ -27,7 +27,7 @@ class VisualisationEnv(wrapper.Wrapper):
         save_path: Optional[str] = None,
         dpi: Optional[int] = 60,
         format: str = "state",
-    ):
+    ) -> None:
         if format == constants.STATE:
             assert (
                 self._env._active
