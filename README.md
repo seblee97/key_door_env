@@ -74,3 +74,5 @@ tuple of the agent position (for use with tabular RL in mind).
 The latter dictates that the output is a pixel representation of the map in the form of a numpy array (for use with function approximation in mind).
 
 ## Visualisation
+
+By installing an additional set of requirements, it is also possible to make use of a set of visualisation methods on the environment. These methods are implemented by a wrapper around the original environment class. Available functionality includes rendering a still image of the environment at a certain time, generating a video of an episode rollout, and visualising a heatmap over the map (e.g. for value functions or visitation counts).
