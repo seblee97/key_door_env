@@ -1,10 +1,9 @@
-# key_door_env
+# Keys and Doors
 
-This package is a simple RL gridworld environment. To navigate the maps, the agent must pickup keys in order to open doors separating each room. 
-Reward locations, door locations, key locations as well as the overall structure of the map can be fully customised.
-
-For use in research in continual learning, there is also a "curriculum" interface that allows for modification of the environment at certain timepoints during training. 
-Modifications include the positions of the keys and rewards as well as the reward statistics. 
+This package provides a simple RL gridworld environment in which navigating the maps requires the agent to pickup keys in order to open doors separating each room. 
+Reward locations, door locations, key locations as well as the overall structure of the map can be fully customised. 
+The environment is aimed specifically at use for research in continual learning; this is achieved primarily via a "curriculum" interface that 
+allows for modification of the environment at certain timepoints during training. Modifications include the positions of the keys and rewards as well as the reward statistics. 
 
 # Getting Started
 
