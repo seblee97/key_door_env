@@ -50,7 +50,7 @@ reward_statistics:
         std: 0
 ```
 #### C. Example Map
-![Sample Map](tests/test_map_files/test_map.pdf "Title")
+![Sample Map](./tests/test_map_files/test_map.pdf "Title")
 
 TODO:
 
