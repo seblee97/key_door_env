@@ -3,46 +3,15 @@ import itertools
 import re
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
-import cv2
-import matplotlib
 import numpy as np
 import yaml
-from key_door import constants, utils
-from matplotlib import cm
-from matplotlib import pyplot as plt
-from matplotlib.animation import FuncAnimation
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from key_door import base_environment, constants, utils
 
 
-class KeyDoorGridworld:
+class KeyDoorGridworld(base_environment.BaseEnvironment):
     """Grid world environment with multiple rooms.
     Between each room is a door, that requires a key to unlock.
     """
-
-    ACTION_SPACE = [0, 1, 2, 3]
-    # 0: LEFT
-    # 1: UP
-    # 2: RIGHT
-    # 3: DOWN
-
-    DELTAS = {
-        0: np.array([-1, 0]),
-        1: np.array([0, 1]),
-        2: np.array([1, 0]),
-        3: np.array([0, -1]),
-    }
-
-    MAPPING = {
-        constants.WALL_CHARACTER: 1,
-        constants.START_CHARACTER: 0,
-        constants.DOOR_CHARACTER: 0,
-        constants.OPEN_CHARACTER: 0,
-        constants.KEY_CHARACTER: 0,
-        constants.REWARD_CHARACTER: 0,
-    }
-
-    # used e.g. for plotting value function.
-    COLORMAP = cm.get_cmap("plasma")
 
     def __init__(
         self,
@@ -106,89 +75,6 @@ class KeyDoorGridworld:
 
         # states are zero, -1 removes walls from counts.
         self._visitation_counts = -1 * copy.deepcopy(self._map)
-
-    @property
-    def active(self) -> bool:
-        return self._active
-
-    @property
-    def episode_step_count(self) -> int:
-        return self._episode_step_count
-
-    # @property
-    # def starting_xy(self) -> Tuple[int, int]:
-    #     return self._starting_xy
-
-    # @property
-    # def agent_position(self) -> Tuple[int, int]:
-    #     return tuple(self._agent_position)
-
-    @property
-    def action_space(self) -> List[int]:
-        return self.ACTION_SPACE
-
-    @property
-    def state_space(self) -> List[Tuple[int, int]]:
-        return self._state_space
-
-    @property
-    def positional_state_space(self):
-        return self._positional_state_space
-
-    # @property
-    # def walls(self) -> List[Tuple]:
-    #     return self._walls
-
-    @property
-    def visitation_counts(self) -> np.ndarray:
-        return self._visitation_counts
-
-    @property
-    def train_episode_history(self) -> List[np.ndarray]:
-        return self._train_episode_history
-
-    @property
-    def test_episode_history(self) -> List[np.ndarray]:
-        return self._test_episode_history
-
-    @property
-    def train_episode_position_history(self) -> np.ndarray:
-        return np.array(self._train_episode_position_history)
-
-    @property
-    def test_episode_position_history(self) -> np.ndarray:
-        return np.array(self._test_episode_position_history)
-
-    # @train_episode_history.setter
-    # def train_episode_history(self, train_episode_history: np.ndarray) -> None:
-    #     self._train_episode_history = [list(s) for s in train_episode_history]
-
-    def render(
-        self,
-        save_path: Optional[str] = None,
-        dpi: Optional[int] = 60,
-        format: str = "state",
-    ):
-        if format == constants.STATE:
-            assert self._active, "To render map with state, environment must be active."
-            "call reset_environment() to reset environment and make it active."
-            "Else render stationary environment skeleton using format='stationary'"
-        if save_path:
-            fig = plt.figure()
-            plt.imshow(
-                self._env_skeleton(
-                    rewards=format, keys=format, doors=format, agent=format
-                ),
-                origin="lower",
-            )
-            fig.savefig(save_path, dpi=dpi)
-        else:
-            plt.imshow(
-                self._env_skeleton(
-                    rewards=format, keys=format, doors=format, agent=format
-                ),
-                origin="lower",
-            )
 
     def _env_skeleton(
         self,
@@ -289,80 +175,7 @@ class KeyDoorGridworld:
 
         return skeleton
 
-    def visualise_episode_history(
-        self, save_path: str, history: Union[str, List[np.ndarray]] = "train"
-    ) -> None:
-        """Produce video of episode history.
-
-        Args:
-            save_path: name of file to be saved.
-            history: "train", "test" to plot train or test history, else provide an independent history.
-        """
-        if isinstance(history, str):
-            if history == constants.TRAIN:
-                history = self._train_episode_history
-            elif history == constants.TEST:
-                history = self._test_episode_history
-
-        SCALING = 20
-        FPS = 30
-
-        map_shape = history[0].shape
-        frameSize = (SCALING * map_shape[1], SCALING * map_shape[0])
-
-        out = cv2.VideoWriter(
-            filename=save_path,
-            fourcc=cv2.VideoWriter_fourcc("m", "p", "4", "v"),
-            fps=FPS,
-            frameSize=frameSize,
-        )
-
-        for frame in history:
-            bgr_frame = frame[..., ::-1].copy()
-            flipped_frame = np.flip(bgr_frame, 0)
-            scaled_up_frame = np.kron(flipped_frame, np.ones((SCALING, SCALING, 1)))
-            out.write((scaled_up_frame * 255).astype(np.uint8))
-
-        out.release()
-
-    def plot_heatmap_over_env(
-        self,
-        heatmap: Dict[Tuple[int, int], float],
-        fig: Optional[matplotlib.figure.Figure] = None,
-        ax: Optional[matplotlib.axes.Axes] = None,
-        save_name: Optional[str] = None,
-    ) -> None:
-        assert (
-            ax is not None and fig is not None
-        ) or save_name is not None, "Either must provide axis to plot heatmap over,"
-        "r file name to save separate figure."
-        environment_map = self._env_skeleton(
-            rewards=None, keys=None, doors=None, agent=None
-        )
-
-        all_values = list(heatmap.values())
-        current_max_value = np.max(all_values)
-        current_min_value = np.min(all_values)
-
-        for position, value in heatmap.items():
-            # remove alpha from rgba in colormap return
-            # normalise value for color mapping
-            environment_map[position[::-1]] = self.COLORMAP(
-                (value - current_min_value) / (current_max_value - current_min_value)
-            )[:-1]
-
-        if save_name is not None:
-            fig = plt.figure()
-            plt.imshow(environment_map, origin="lower")
-            plt.colorbar()
-            fig.savefig(save_name, dpi=60)
-        else:
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="5%", pad=0.05)
-            im = ax.imshow(environment_map, origin="lower", cmap=self.COLORMAP)
-            fig.colorbar(im, ax=ax, cax=cax, orientation="vertical")
-
-    def get_state_representation(
+    def _get_state_representation(
         self,
         tuple_state: Optional[Tuple] = None,
     ) -> Union[tuple, np.ndarray]:
@@ -446,7 +259,7 @@ class KeyDoorGridworld:
 
         self._active = self._remain_active(reward=reward)
 
-        new_state = self.get_state_representation()
+        new_state = self._get_state_representation()
 
         self._episode_step_count += 1
 
@@ -510,7 +323,7 @@ class KeyDoorGridworld:
             self._test_episode_position_history = [tuple(self._agent_position)]
             self._test_episode_history = [self._env_skeleton()]
 
-        initial_state = self.get_state_representation()
+        initial_state = self._get_state_representation()
 
         return initial_state
 
