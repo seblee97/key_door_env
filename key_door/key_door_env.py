@@ -44,9 +44,21 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         self._representation = representation
         self._episode_timeout = episode_timeout or np.inf
 
-        self._map = utils.parse_map_outline(
-            map_file_path=map_ascii_path, mapping=self.MAPPING
+        self._setup_environment(
+            map_ascii_path=map_ascii_path, map_yaml_path=map_yaml_path
         )
+
+        # states are zero, -1 removes walls from counts.
+        self._visitation_counts = -1 * copy.deepcopy(self._map)
+
+    def _setup_environment(
+        self, map_yaml_path: str, map_ascii_path: Optional[str] = None
+    ):
+
+        if map_ascii_path is not None:
+            self._map = utils.parse_map_outline(
+                map_file_path=map_ascii_path, mapping=self.MAPPING
+            )
 
         (
             self._starting_xy,
@@ -72,9 +84,6 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
             key_positions=self._key_positions,
             reward_positions=reward_positions,
         )
-
-        # states are zero, -1 removes walls from counts.
-        self._visitation_counts = -1 * copy.deepcopy(self._map)
 
     def _env_skeleton(
         self,
@@ -297,7 +306,9 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         ]
         return not any(conditions)
 
-    def reset_environment(self, train: bool = True) -> Tuple[int, int, int]:
+    def reset_environment(
+        self, train: bool = True, map_yaml_path: Optional[str] = None
+    ) -> Tuple[int, int, int]:
         """Reset environment.
 
         Bring agent back to starting position.
@@ -305,6 +316,9 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         Args:
             train: whether episode is for train or test (affects logging).
         """
+        if map_yaml_path is not None:
+            self._setup_environment(map_yaml_path=map_yaml_path)
+
         self._active = True
         self._episode_step_count = 0
         self._training = train
