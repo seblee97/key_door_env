@@ -1,18 +1,34 @@
+import argparse
 import copy
 import os
 import random
+import sys
 import tempfile
 import unittest
 
-import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 from key_door import key_door_env
+
+try:
+    import matplotlib.pyplot as plt
+    from key_door import visualisation_env
+except:
+    pass
+
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 TEST_MAP_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map.txt")
 TEST_MAP_YAML_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map.yaml")
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--full",
+    action="store_true",
+    help="if flagged, test visualisations as well as basic functionality.",
+)
 
 
 class TestIntegration(unittest.TestCase):
@@ -56,11 +72,15 @@ class TestIntegration(unittest.TestCase):
 
     def test_render(self):
         for env in self._envs:
+            env = visualisation_env.VisualisationEnv(env=env)
             with tempfile.NamedTemporaryFile() as tmp:
                 env.render(save_path=tmp, format="stationary")
 
     def test_episode_visualisation(self):
         for env in self._envs:
+
+            env = visualisation_env.VisualisationEnv(env=env)
+
             env.reset_environment()
 
             # random rollout
@@ -75,6 +95,9 @@ class TestIntegration(unittest.TestCase):
 
     def test_axis_heatmap_visualisation(self):
         for env in self._envs:
+
+            env = visualisation_env.VisualisationEnv(env=env)
+
             fig, axs = plt.subplots(3, 2)
 
             for i in range(3):
@@ -93,17 +116,25 @@ class TestIntegration(unittest.TestCase):
                 fig.savefig(tmp)
 
 
-def get_suite():
-    model_tests = [
-        "test_basic_setup",
-        "test_basic_setup",
-        "test_random_rollout",
-        "test_render",
-        "test_episode_visualisation",
-        "test_axis_heatmap_visualisation",
-    ]
+def get_suite(full: bool):
+    model_tests = ["test_basic_setup", "test_basic_setup", "test_random_rollout"]
+    if full:
+        model_tests.extend(
+            [
+                "test_render",
+                "test_episode_visualisation",
+                "test_axis_heatmap_visualisation",
+            ]
+        )
     return unittest.TestSuite(map(TestIntegration, model_tests))
 
 
+args = parser.parse_args()
+
+if args.full:
+    assert (
+        "matplotlib" in sys.modules
+    ), "To run full test suite, additional requirements need to be met. Please consult README."
+
 runner = unittest.TextTestRunner(buffer=True, verbosity=1)
-runner.run(get_suite())
+runner.run(get_suite(full=args.full))
