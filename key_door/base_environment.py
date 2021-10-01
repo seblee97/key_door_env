@@ -1,5 +1,8 @@
 import abc
-from typing import Tuple
+from typing import List, Tuple
+
+import numpy as np
+from key_door import constants
 
 
 class BaseEnvironment(abc.ABC):
@@ -9,6 +12,28 @@ class BaseEnvironment(abc.ABC):
         step: takes action produces reward and next state.
         reset_environment: reset environment and return initial state.
     """
+
+    ACTION_SPACE = [0, 1, 2, 3]
+    # 0: LEFT
+    # 1: UP
+    # 2: RIGHT
+    # 3: DOWN
+
+    DELTAS = {
+        0: np.array([-1, 0]),
+        1: np.array([0, 1]),
+        2: np.array([1, 0]),
+        3: np.array([0, -1]),
+    }
+
+    MAPPING = {
+        constants.WALL_CHARACTER: 1,
+        constants.START_CHARACTER: 0,
+        constants.DOOR_CHARACTER: 0,
+        constants.OPEN_CHARACTER: 0,
+        constants.KEY_CHARACTER: 0,
+        constants.REWARD_CHARACTER: 0,
+    }
 
     def __init__(self):
         self._training: bool
@@ -37,3 +62,39 @@ class BaseEnvironment(abc.ABC):
     @property
     def episode_step_count(self) -> int:
         return self._episode_step_count
+
+    @property
+    def agent_position(self) -> Tuple[int, int]:
+        return tuple(self._agent_position)
+
+    @property
+    def action_space(self) -> List[int]:
+        return self.ACTION_SPACE
+
+    @property
+    def state_space(self) -> List[Tuple[int, int]]:
+        return self._state_space
+
+    @property
+    def positional_state_space(self):
+        return self._positional_state_space
+
+    @property
+    def visitation_counts(self) -> np.ndarray:
+        return self._visitation_counts
+
+    @property
+    def train_episode_history(self) -> List[np.ndarray]:
+        return self._train_episode_history
+
+    @property
+    def test_episode_history(self) -> List[np.ndarray]:
+        return self._test_episode_history
+
+    @property
+    def train_episode_position_history(self) -> np.ndarray:
+        return np.array(self._train_episode_position_history)
+
+    @property
+    def test_episode_position_history(self) -> np.ndarray:
+        return np.array(self._test_episode_position_history)
