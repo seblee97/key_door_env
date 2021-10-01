@@ -16,7 +16,7 @@ Maps are specified by a combination of an ASCII text file (with the map layout) 
 
 For instance, the ASCII and YAML snippets below (A, B) produce the map shown below (C). These example files can also be found under the ```tests/test_map_files```.
 
-### A.
+#### A. ASCII file
 ```
 #################################
 #         K    #       R#       #
@@ -27,7 +27,7 @@ For instance, the ASCII and YAML snippets below (A, B) produce the map shown bel
 ################################# 
 ```
 
-### B.
+#### B. YAML File
 ```
 start_position: [1, 1]
 
@@ -51,7 +51,7 @@ reward_statistics:
         std: 0
 ```
 
-### C.
+#### C. Example Map
 
 TODO:
 
