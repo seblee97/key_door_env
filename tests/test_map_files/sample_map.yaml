@@ -1,8 +1,8 @@
 start_position: [1, 1]
 
 key_positions:
-    - [23, 5] # key for door 1
-    - [2, 5] # key for door 2
+    - [2, 5] # key for door 1
+    - [23, 5] # key for door 2
 
 door_positions:
     - [15, 1] # door 1 
@@ -17,4 +17,4 @@ reward_positions:
 reward_statistics:
     gaussian:
         mean: 1
-        std: 0
+        variance: 0
