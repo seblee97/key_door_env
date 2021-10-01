@@ -149,3 +149,9 @@ def configure_state_space(map_outline, key_positions, reward_positions):
         state_space,
         wall_state_space,
     )
+
+
+def rgb_to_grayscale(rgb: np.ndarray) -> np.ndarray:
+    # rgb channel last
+    grayscale = np.dot(rgb[..., :3], [[0.299], [0.587], [0.114]])
+    return grayscale
