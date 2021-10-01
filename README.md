@@ -18,14 +18,21 @@ For instance, the ASCII and YAML snippets below (A, B) produce the map shown bel
 
 #### A. ASCII file
 ```
-#################################
-#         K    #       R#       #
-#              #        D       #
-#              #        #       #
-#              #        #       #
-#S             D     K  #   R   #
-################################# 
+#################################	#################################
+#         K    #       R#       #	#              #        #       #
+#              #        D       #	#              #                #
+#              #        #       #	#              #        #       #
+#              #        #       #	#              #        #       #
+#S             D     K  #   R   #	#                       #       #
+################################# 	#################################
 ```
+
+All 'wall' elements must be signified by a # character, all reachable positions for the agent must be signified by an empty space, 
+or by a character representing the start position (S), key position (K), door position (D), or reward position (R). 
+Note: these special characters have no function but to help visualise the map when designing. This is represented by the identical 
+copy to the right without the special characters: these two ascii codes will behave identically. All position specifications must be 
+made in the YAML file. 
+
 #### B. YAML File
 ```
 start_position: [1, 1]
