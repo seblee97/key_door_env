@@ -68,7 +68,8 @@ Initialising a map in python is very simple. There principle method is the _step
 The available actions are up, down, left and right. The constructor to the environment class takes three arguments: 
 the path to the .txt file, the path to the .yaml file, and a field called "representation". This final argument can
 either be given as _agent_position_, or _pixel_. The former dictates that the output of the _step_ method is the state represented by an x, y 
-tuple of the agent position. The latter dictates that the output is a pixel representation of the map in the form of a numpy array.
+tuple of the agent position (for use with tabular RL in mind). 
+The latter dictates that the output is a pixel representation of the map in the form of a numpy array (for use with function approximation in mind).
 
 TODO:
 
