@@ -26,7 +26,6 @@ For instance, the ASCII and YAML snippets below (A, B) produce the map shown bel
 #S             D     K  #   R   #
 ################################# 
 ```
-
 #### B. YAML File
 ```
 start_position: [1, 1]
@@ -50,8 +49,8 @@ reward_statistics:
         mean: 1
         std: 0
 ```
-
 #### C. Example Map
+![Alt text](tests/test_map_files/test_map.pdf?raw=true "Title")
 
 TODO:
 
