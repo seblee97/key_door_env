@@ -8,7 +8,7 @@ import unittest
 
 import numpy as np
 import yaml
-from key_door import key_door_env
+from key_door import curriculum_env, key_door_env
 
 try:
     import matplotlib.pyplot as plt
@@ -21,6 +21,7 @@ FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 TEST_MAP_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map.txt")
 TEST_MAP_YAML_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map.yaml")
+TEST_MAP_YAML2_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map2.yaml")
 
 
 parser = argparse.ArgumentParser()
@@ -115,15 +116,77 @@ class TestIntegration(unittest.TestCase):
             with tempfile.NamedTemporaryFile() as tmp:
                 fig.savefig(tmp)
 
+    def test_curriculum_without_visualisation(self):
+        for env in self._envs:
+
+            env = visualisation_env.VisualisationEnv(env=env)
+            env = curriculum_env.CurriculumEnv(
+                env=env, transitions=[TEST_MAP_YAML_PATH, TEST_MAP_YAML2_PATH]
+            )
+
+            env.reset_environment()
+
+            # follow random policy
+            for i in range(100):
+                action = random.choice(env.action_space)
+                env.step(action)
+
+            next(env)
+
+            # follow random policy
+            for i in range(100):
+                action = random.choice(env.action_space)
+                env.step(action)
+
+    def test_curriculum_with_visualisation(self):
+        for env in self._envs:
+
+            env = visualisation_env.VisualisationEnv(env=env)
+            env = curriculum_env.CurriculumEnv(
+                env=env, transitions=[TEST_MAP_YAML_PATH, TEST_MAP_YAML2_PATH]
+            )
+
+            env.reset_environment()
+
+            # follow random policy
+            for i in range(100):
+                action = random.choice(env.action_space)
+                env.step(action)
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                video_file_name = os.path.join(tmpdir, "curr1.mp4")
+                env.visualise_episode_history(
+                    save_path=video_file_name, history="train"
+                )
+
+            next(env)
+
+            # follow random policy
+            for i in range(100):
+                action = random.choice(env.action_space)
+                env.step(action)
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                video_file_name = os.path.join(tmpdir, "curr2.mp4")
+                env.visualise_episode_history(
+                    save_path=video_file_name, history="train"
+                )
+
 
 def get_suite(full: bool):
-    model_tests = ["test_basic_setup", "test_basic_setup", "test_random_rollout"]
+    model_tests = [
+        "test_basic_setup",
+        "test_basic_setup",
+        "test_random_rollout",
+        "test_curriculum_without_visualisation",
+    ]
     if full:
         model_tests.extend(
             [
                 "test_render",
                 "test_episode_visualisation",
                 "test_axis_heatmap_visualisation",
+                "test_curriculum_with_visualisation",
             ]
         )
     return unittest.TestSuite(map(TestIntegration, model_tests))
