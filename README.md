@@ -16,7 +16,7 @@ Maps are specified by a combination of an ASCII text file (with the map layout) 
 
 For instance, the ASCII and YAML snippets below (A, B) produce the map shown below (C). These example files can also be found under the ```tests/test_map_files```.
 
-#### A. ASCII file
+#### A. ASCII .txt file
 ```
 #################################	#################################
 #         K    #       R#       #	#              #        #       #
@@ -58,6 +58,9 @@ reward_statistics:
 ```
 #### C. Example Map
 ![Sample Map](./tests/test_map_files/test_map.png "Title")
+
+Here the agent is shown in its starting position in gray, the keys are shown in yellow, the 
+doors are shown in maroon, and the rewards are shown in red. 
 
 TODO:
 
