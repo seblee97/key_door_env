@@ -7,8 +7,10 @@ allows for modification of the environment at certain timepoints during training
 
 ## Getting Started
 
-There are minimal requirements for basic use of this package. The python requirements are listed in ```requirements.txt``` and can be installed via ```pip install -r requirements.txt```.
-To ensure correct installation, you can run tests via ```python -m tests/test.py```.
+There are minimal requirements for basic use of this package. The python requirements are listed in ```requirements.txt``` and can be installed via ```pip install -r requirements.txt```. The package itself can then be installed using ```pip install -e .```.
+To ensure correct installation, you can run tests via ```python tests/test_integration.py```. 
+
+For more extensive features, including visualisations you can also install additional requirements via ```pip install -r supplementary_requirements.txt``` (before installing the package). These can be tested via ```python tests/test_integration.py --full```.
 
 ## Example Usage
 
@@ -70,3 +72,5 @@ the path to the .txt file, the path to the .yaml file, and a field called "repre
 either be given as _agent_position_, or _pixel_. The former dictates that the output of the _step_ method is the state represented by an x, y 
 tuple of the agent position (for use with tabular RL in mind). 
 The latter dictates that the output is a pixel representation of the map in the form of a numpy array (for use with function approximation in mind).
+
+## Visualisation
