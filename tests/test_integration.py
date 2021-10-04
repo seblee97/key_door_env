@@ -16,6 +16,19 @@ try:
 except:
     pass
 
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--full",
+    action="store_true",
+    help="if flagged, test visualisations as well as basic functionality.",
+)
+parser.add_argument(
+    "--save",
+    action="store_true",
+    help="if flagged, output files from tests are save.",
+)
+
+args = parser.parse_args()
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -24,16 +37,24 @@ TEST_MAP_YAML_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map.yaml"
 TEST_MAP_YAML2_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map2.yaml")
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--full",
-    action="store_true",
-    help="if flagged, test visualisations as well as basic functionality.",
-)
+if args.save:
+    TEST_MAP_PDF_SAVE_PATH = ""
+    EPISODE_VISUALISATION_MP4_PATH = ""
+    EPISODE_VISUALISATION_CURR_MP4_PATH = ""
+    HEATMAP_VISUALISATION_PATH = ""
+else:
+    TEST_MAP_PDF_SAVE_PATH = None
+    EPISODE_VISUALISATION_MP4_PATH = None
+    EPISODE_VISUALISATION_CURR_MP4_PATH = None
+    HEATMAP_VISUALISATION_PATH = None
 
 
 class TestIntegration(unittest.TestCase):
     """Test class for integration of functionality in key_door_env package."""
+
+    def __init__(self, test_name: str, save_path: str):
+        super().__init__(test_name)
+        self._save_path = save_path
 
     def setUp(self):
         self._tabular_env = key_door_env.KeyDoorGridworld(
@@ -74,8 +95,10 @@ class TestIntegration(unittest.TestCase):
     def test_render(self):
         for env in self._envs:
             env = visualisation_env.VisualisationEnv(env=env)
-            with tempfile.NamedTemporaryFile() as tmp:
-                env.render(save_path=tmp, format="stationary")
+            env.render(
+                save_path=os.path.join(self._save_path, "test_render.pdf"),
+                format="stationary",
+            )
 
     def test_episode_visualisation(self):
         for env in self._envs:
@@ -85,14 +108,11 @@ class TestIntegration(unittest.TestCase):
             env.reset_environment()
 
             # random rollout
-            for i in range(100):
+            for i in range(1000):
                 env.step(random.choice(env.action_space))
 
-            with tempfile.TemporaryDirectory() as tmpdir:
-                video_file_name = os.path.join(tmpdir, "t.mp4")
-                env.visualise_episode_history(
-                    save_path=video_file_name, history="train"
-                )
+            video_file_name = os.path.join(self._save_path, "visualisation.mp4")
+            env.visualise_episode_history(save_path=video_file_name, history="train")
 
     def test_axis_heatmap_visualisation(self):
         for env in self._envs:
@@ -113,8 +133,7 @@ class TestIntegration(unittest.TestCase):
 
             fig.tight_layout()
 
-            with tempfile.NamedTemporaryFile() as tmp:
-                fig.savefig(tmp)
+            fig.savefig(os.path.join(self._save_path, "heatmap_visualisation.pdf"))
 
     def test_curriculum_without_visualisation(self):
         for env in self._envs:
@@ -149,31 +168,25 @@ class TestIntegration(unittest.TestCase):
             env.reset_environment()
 
             # follow random policy
-            for i in range(100):
+            for i in range(1000):
                 action = random.choice(env.action_space)
                 env.step(action)
 
-            with tempfile.TemporaryDirectory() as tmpdir:
-                video_file_name = os.path.join(tmpdir, "curr1.mp4")
-                env.visualise_episode_history(
-                    save_path=video_file_name, history="train"
-                )
+            video_file_name = os.path.join(self._save_path, "episode_curr_1.mp4")
+            env.visualise_episode_history(save_path=video_file_name, history="train")
 
             next(env)
 
             # follow random policy
-            for i in range(100):
+            for i in range(1000):
                 action = random.choice(env.action_space)
                 env.step(action)
 
-            with tempfile.TemporaryDirectory() as tmpdir:
-                video_file_name = os.path.join(tmpdir, "curr2.mp4")
-                env.visualise_episode_history(
-                    save_path=video_file_name, history="train"
-                )
+            video_file_name = os.path.join(self._save_path, "episode_curr_2.mp4")
+            env.visualise_episode_history(save_path=video_file_name, history="train")
 
 
-def get_suite(full: bool):
+def get_suite(full: bool, save_path: str):
     model_tests = [
         "test_basic_setup",
         "test_basic_setup",
@@ -189,10 +202,11 @@ def get_suite(full: bool):
                 "test_curriculum_with_visualisation",
             ]
         )
-    return unittest.TestSuite(map(TestIntegration, model_tests))
+    suite = unittest.TestSuite()
+    for model_test in model_tests:
+        suite.addTest(TestIntegration(model_test, save_path))
+    return suite
 
-
-args = parser.parse_args()
 
 if args.full:
     assert (
@@ -200,4 +214,11 @@ if args.full:
     ), "To run full test suite, additional requirements need to be met. Please consult README."
 
 runner = unittest.TextTestRunner(buffer=True, verbosity=1)
-runner.run(get_suite(full=args.full))
+
+if args.save:
+    save_path = os.path.join(FILE_PATH, "test_outputs")
+    os.mkdir(save_path)
+    runner.run(get_suite(full=args.full, save_path=save_path))
+else:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        runner.run(get_suite(full=args.full, save_path=tmpdir))
