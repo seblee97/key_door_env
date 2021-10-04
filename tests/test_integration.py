@@ -5,6 +5,7 @@ import random
 import sys
 import tempfile
 import unittest
+import warnings
 
 import numpy as np
 import yaml
@@ -205,7 +206,7 @@ if args.full:
     ), "To run full test suite, additional requirements need to be met. Please consult README."
 else:
     if args.save:
-        raise warnings.Warning(
+        warnings.warn(
             "Saving is only defined for visualisation, so will have no effect unless"
             " --full flag is used and visualisation tests are run."
         )
