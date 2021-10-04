@@ -11,6 +11,7 @@ There are minimal requirements for basic use of this package. The python require
 To ensure correct installation, you can run tests via ```python tests/test_integration.py```. 
 
 For more extensive features, including visualisations you can also install additional requirements via ```pip install -r supplementary_requirements.txt``` (before installing the package). These can be tested via ```python tests/test_integration.py --full```.
+A further flag ```--save``` can be used with the visualisation testing to save the output files to a sub-folder in tests.
 
 ## Example Usage
 
