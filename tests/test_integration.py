@@ -28,25 +28,11 @@ parser.add_argument(
     help="if flagged, output files from tests are save.",
 )
 
-args = parser.parse_args()
-
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 TEST_MAP_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map.txt")
 TEST_MAP_YAML_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map.yaml")
 TEST_MAP_YAML2_PATH = os.path.join(FILE_PATH, "test_map_files", "sample_map2.yaml")
-
-
-if args.save:
-    TEST_MAP_PDF_SAVE_PATH = ""
-    EPISODE_VISUALISATION_MP4_PATH = ""
-    EPISODE_VISUALISATION_CURR_MP4_PATH = ""
-    HEATMAP_VISUALISATION_PATH = ""
-else:
-    TEST_MAP_PDF_SAVE_PATH = None
-    EPISODE_VISUALISATION_MP4_PATH = None
-    EPISODE_VISUALISATION_CURR_MP4_PATH = None
-    HEATMAP_VISUALISATION_PATH = None
 
 
 class TestIntegration(unittest.TestCase):
@@ -61,12 +47,14 @@ class TestIntegration(unittest.TestCase):
             map_ascii_path=TEST_MAP_PATH,
             map_yaml_path=TEST_MAP_YAML_PATH,
             representation="agent_position",
+            episode_timeout=1000,
         )
 
         self._pixel_env = key_door_env.KeyDoorGridworld(
             map_ascii_path=TEST_MAP_PATH,
             map_yaml_path=TEST_MAP_YAML_PATH,
             representation="pixel",
+            episode_timeout=1000,
         )
 
         self._envs = [self._tabular_env, self._pixel_env]
@@ -79,6 +67,7 @@ class TestIntegration(unittest.TestCase):
 
     def test_random_rollout(self):
         for env in self._envs:
+
             env.reset_environment()
             for i in range(100):
                 env.step(random.choice(env.action_space))
@@ -108,7 +97,7 @@ class TestIntegration(unittest.TestCase):
             env.reset_environment()
 
             # random rollout
-            for i in range(1000):
+            while env.active:
                 env.step(random.choice(env.action_space))
 
             video_file_name = os.path.join(self._save_path, "visualisation.mp4")
@@ -146,14 +135,14 @@ class TestIntegration(unittest.TestCase):
             env.reset_environment()
 
             # follow random policy
-            for i in range(100):
+            while env.active:
                 action = random.choice(env.action_space)
                 env.step(action)
 
             next(env)
 
             # follow random policy
-            for i in range(100):
+            while env.active:
                 action = random.choice(env.action_space)
                 env.step(action)
 
@@ -168,7 +157,7 @@ class TestIntegration(unittest.TestCase):
             env.reset_environment()
 
             # follow random policy
-            for i in range(1000):
+            while env.active:
                 action = random.choice(env.action_space)
                 env.step(action)
 
@@ -178,7 +167,7 @@ class TestIntegration(unittest.TestCase):
             next(env)
 
             # follow random policy
-            for i in range(1000):
+            while env.active:
                 action = random.choice(env.action_space)
                 env.step(action)
 
@@ -208,16 +197,24 @@ def get_suite(full: bool, save_path: str):
     return suite
 
 
+args = parser.parse_args()
+
 if args.full:
     assert (
         "matplotlib" in sys.modules
     ), "To run full test suite, additional requirements need to be met. Please consult README."
+else:
+    if args.save:
+        raise warnings.Warning(
+            "Saving is only defined for visualisation, so will have no effect unless"
+            " --full flag is used and visualisation tests are run."
+        )
 
 runner = unittest.TextTestRunner(buffer=True, verbosity=1)
 
 if args.save:
     save_path = os.path.join(FILE_PATH, "test_outputs")
-    os.mkdir(save_path)
+    os.makedirs(save_path, exist_ok=True)
     runner.run(get_suite(full=args.full, save_path=save_path))
 else:
     with tempfile.TemporaryDirectory() as tmpdir:
