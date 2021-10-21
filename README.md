@@ -73,8 +73,8 @@ Initialising a map in python is very simple.
 from key_door import key_door_env
 
 env = key_door_env.KeyDoorGridworld(
-	map_ascii_path=TEST_MAP_PATH,
-    map_yaml_path=TEST_MAP_YAML_PATH,
+    map_ascii_path=PATH_TO_MAP_FILE,
+    map_yaml_path=PATH_TO_MAP_YAML,
     representation="agent_position",
     episode_timeout=1000
 )
@@ -104,7 +104,7 @@ As well as the visualisation wrapper, the package also includes a curriculum wra
 ```
 from key_door import curriculum_env
 
-env = curriculum_env.CurriculumEnv(env=env, transitions=[TEST_MAP_YAML_PATH, TEST_MAP_YAML2_PATH])
+env = curriculum_env.CurriculumEnv(env=env, transitions=[MAP_1_YAML_PATH, MAP_2_YAML_PATH, ...])
 ```
 
 ## Possible Future Features
