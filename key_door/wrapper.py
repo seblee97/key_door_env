@@ -85,5 +85,15 @@ class Wrapper(base_environment.BaseEnvironment):
             heatmap=heatmap, fig=fig, ax=ax, save_name=save_name
         )
 
+    def average_values_over_positional_states(
+        self, values: Dict[Tuple[int], float]
+    ) -> Dict[Tuple[int], float]:
+        return self._env.average_values_over_positional_states(values=values)
+
+    def get_value_combinations(
+        self, values: Dict[Tuple[int], float]
+    ) -> Dict[Tuple[int], Dict[Tuple[int], float]]:
+        return self._env.get_value_combinations(values=values)
+
     def __next__(self) -> None:
         next(self._env)
