@@ -85,6 +85,50 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
             reward_positions=reward_positions,
         )
 
+    def average_values_over_positional_states(
+        self, values: Dict[Tuple[int], float]
+    ) -> Dict[Tuple[int], float]:
+        """For certain analyses (e.g. plotting value functions) we want to
+        average the values for each position over all non-positional state information--
+        in this case the key posessions.
+        Args:
+            values: full state-action value information
+        Returns:
+            averaged_values: (positional-state)-action values.
+        """
+        averaged_values = {}
+        for state in self._positional_state_space:
+            non_positional_set = [
+                values[state + i[0] + i[1]]
+                for i in itertools.product(
+                    self._key_possession_state_space, self._rewards_received_state_space
+                )
+            ]
+            non_positional_mean = np.mean(non_positional_set, axis=0)
+            averaged_values[state] = non_positional_mean
+        return averaged_values
+
+    def get_value_combinations(
+        self, values: Dict[Tuple[int], float]
+    ) -> Dict[Tuple[int], Dict[Tuple[int], float]]:
+        """Get each possible combination of positional state-values
+        over non-positional states.
+        Args:
+            values: values over overall state-space
+        Returns:
+            value_combinations: values over positional state space
+                for each combination of non-positional state.
+        """
+        value_combinations = {}
+        for key_state in self._key_possession_state_space:
+            for reward_state in self._rewards_received_state_space:
+                value_combination = {}
+                for state in self._positional_state_space:
+                    value_combination[state] = values[state + key_state + reward_state]
+                value_combinations[key_state + reward_state] = value_combination
+
+        return value_combinations
+
     def _env_skeleton(
         self,
         rewards: Union[None, str, Tuple[int]] = "state",
