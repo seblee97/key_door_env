@@ -115,7 +115,7 @@ class VisualisationEnv(wrapper.Wrapper):
 
         if save_name is not None:
             fig = plt.figure()
-            plt.imshow(environment_map, origin="lower")
+            plt.imshow(environment_map, origin="lower", cmap=self.COLORMAP)
             plt.colorbar()
             fig.savefig(save_name, dpi=60)
         else:
