@@ -19,6 +19,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         map_yaml_path: str,
         representation: str,
         episode_timeout: Optional[Union[int, None]] = None,
+        scaling: int = 1,
     ) -> None:
         """Class constructor.
 
@@ -43,6 +44,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
 
         self._representation = representation
         self._episode_timeout = episode_timeout or np.inf
+        self._scaling = scaling
 
         self._setup_environment(
             map_ascii_path=map_ascii_path, map_yaml_path=map_yaml_path
@@ -257,7 +259,9 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
             )  # C x H x W
             # add batch dimension
             state = np.expand_dims(transposed_env_skeleton, 0)
-            return state
+            scaled_state = np.kron(state, np.ones((1, 1, self._scaling, self._scaling)))
+
+            return scaled_state
 
     def _move_agent(self, delta: np.ndarray) -> float:
         """Move agent. If provisional new position is a wall, no-op."""
