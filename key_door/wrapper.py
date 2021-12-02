@@ -22,11 +22,11 @@ class Wrapper(base_environment.BaseEnvironment):
 
     @property
     def episode_step_count(self) -> int:
-        return self._env._episode_step_count
+        return self._env.episode_step_count
 
     @property
     def agent_position(self) -> Tuple[int, int]:
-        return tuple(self._env._agent_position)
+        return self._env.agent_position
 
     @property
     def action_space(self) -> List[int]:
@@ -34,31 +34,31 @@ class Wrapper(base_environment.BaseEnvironment):
 
     @property
     def state_space(self) -> List[Tuple[int, int]]:
-        return self._env._state_space
+        return self._env.state_space
 
     @property
     def positional_state_space(self):
-        return self._env._positional_state_space
+        return self._env.positional_state_space
 
     @property
     def visitation_counts(self) -> np.ndarray:
-        return self._env._visitation_counts
+        return self._env.visitation_counts
 
     @property
     def train_episode_history(self) -> List[np.ndarray]:
-        return self._env._train_episode_history
+        return self._env.train_episode_history
 
     @property
     def test_episode_history(self) -> List[np.ndarray]:
-        return self._env._test_episode_history
+        return self._env.test_episode_history
 
     @property
     def train_episode_position_history(self) -> np.ndarray:
-        return np.array(self._env._train_episode_position_history)
+        return self._env.train_episode_position_history
 
     @property
     def test_episode_position_history(self) -> np.ndarray:
-        return np.array(self._env._test_episode_position_history)
+        return self._env.test_episode_position_history
 
     # including these in the base wrapper is not ideal. Maybe rethink wrappers...
     def render(
