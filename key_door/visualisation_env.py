@@ -30,14 +30,14 @@ class VisualisationEnv(wrapper.Wrapper):
     ) -> None:
         if format == constants.STATE:
             assert (
-                self._env._active
+                self._env.active
             ), "To render map with state, environment must be active."
             "call reset_environment() to reset environment and make it active."
             "Else render stationary environment skeleton using format='stationary'"
         if save_path:
             fig = plt.figure()
             plt.imshow(
-                self._env._env_skeleton(
+                self._env.env_skeleton(
                     rewards=format, keys=format, doors=format, agent=format
                 ),
                 origin="lower",
@@ -45,7 +45,7 @@ class VisualisationEnv(wrapper.Wrapper):
             fig.savefig(save_path, dpi=dpi)
         else:
             plt.imshow(
-                self._env._env_skeleton(
+                self._env.env_skeleton(
                     rewards=format, keys=format, doors=format, agent=format
                 ),
                 origin="lower",
@@ -62,9 +62,9 @@ class VisualisationEnv(wrapper.Wrapper):
         """
         if isinstance(history, str):
             if history == constants.TRAIN:
-                history = self._env._train_episode_history
+                history = self._env.train_episode_history
             elif history == constants.TEST:
-                history = self._env._test_episode_history
+                history = self._env.test_episode_history
 
         SCALING = 20
         FPS = 30
@@ -98,7 +98,7 @@ class VisualisationEnv(wrapper.Wrapper):
             ax is not None and fig is not None
         ) or save_name is not None, "Either must provide axis to plot heatmap over,"
         "r file name to save separate figure."
-        environment_map = self._env._env_skeleton(
+        environment_map = self._env.env_skeleton(
             rewards=None, keys=None, doors=None, agent=None
         )
 
