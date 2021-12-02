@@ -1,8 +1,6 @@
-import copy
 from typing import List
 
-import numpy as np
-from key_door import constants, wrapper
+from key_door import wrapper
 
 
 class CurriculumEnv(wrapper.Wrapper):
@@ -18,16 +16,15 @@ class CurriculumEnv(wrapper.Wrapper):
         super().__init__(env=env)
 
         self._transitions = transitions
-        self._transitions_reversed = copy.deepcopy(self._transitions)
 
     def _transition(self) -> None:
         """Transition environment to next phase."""
-        next_yaml_path = self._transitions_reversed.pop()
+        next_yaml_path = self._transitions.pop(0)
         self._env.reset_environment(map_yaml_path=next_yaml_path)
 
     def __next__(self) -> None:
         """Initiate change in environment."""
-        if self._transitions_reversed:
+        if self._transitions:
             self._transition()
         else:
             raise StopIteration("No more transitions specified.")
