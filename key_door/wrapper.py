@@ -69,6 +69,15 @@ class Wrapper(base_environment.BaseEnvironment):
     ) -> None:
         self._env.render(save_path=save_path, dpi=dpi, format=format)
 
+    def _env_skeleton(
+        self,
+        rewards: Union[None, str, Tuple[int]] = "state",
+        keys: Union[None, str, Tuple[int]] = "state",
+        doors: Union[None, str] = "state",
+        agent: Union[None, str, np.ndarray] = "state",
+    ):
+        self._env._env_skeleton(rewards=rewards, keys=keys, doors=doors, agent=agent)
+
     def visualise_episode_history(
         self, save_path: str, history: Union[str, List[np.ndarray]] = "train"
     ) -> None:
