@@ -37,7 +37,7 @@ class VisualisationEnv(wrapper.Wrapper):
         if save_path:
             fig = plt.figure()
             plt.imshow(
-                self._env.env_skeleton(
+                self._env._env_skeleton(
                     rewards=format, keys=format, doors=format, agent=format
                 ),
                 origin="lower",
