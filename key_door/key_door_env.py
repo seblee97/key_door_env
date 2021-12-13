@@ -19,15 +19,26 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         map_yaml_path: str,
         representation: str,
         episode_timeout: Optional[Union[int, None]] = None,
-        scaling: int = 1,
+        scaling: Optional[int] = 1,
+        field_x: Optional[int] = 1,
+        field_y: Optional[int] = 1,
     ) -> None:
         """Class constructor.
 
         Args:
             map_ascii_path: path to txt or other ascii file with map specifications.
             map_yaml_path: path to yaml file with map settings (reward locations etc.)
-            representation: agent_position (for tabular) or pixel (for function approximation)
+            representation: agent_position (for tabular) or pixel
+                (for function approximation).
             episode_timeout: number of steps before episode automatically terminates.
+            scaling: optional integer (for use with pixel representations)
+                specifying how much to expand state by.
+            field_x: integer (required for use with partial observability
+                in pixel representations) specifying how many pixels in each x
+                direction the agent can see.
+            field_y: integer (required for use with partial observability
+                in pixel representations) specifying how many pixels in each y
+                direction the agent can see.
         """
 
         self._active: bool = False
@@ -45,6 +56,8 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         self._representation = representation
         self._episode_timeout = episode_timeout or np.inf
         self._scaling = scaling
+        self._field_x = field_x
+        self._field_y = field_y
 
         self._setup_environment(
             map_ascii_path=map_ascii_path, map_yaml_path=map_yaml_path
@@ -243,8 +256,9 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
                 + tuple(self._keys_state)
                 + tuple(self._rewards_state)
             )
-        elif self._representation == constants.PIXEL:
+        elif self._representation in [constants.PIXEL, constants.PO_PIXEL]:
             if tuple_state is None:
+                agent_position = self._agent_position
                 env_skeleton = self._env_skeleton()  # H x W x C
             else:
                 agent_position = tuple_state[:2]
@@ -253,15 +267,99 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
                 env_skeleton = self._env_skeleton(
                     rewards=rewards, keys=keys, agent=agent_position
                 )
-            grayscale_env_skeleton = utils.rgb_to_grayscale(env_skeleton)
-            transposed_env_skeleton = np.transpose(
-                grayscale_env_skeleton, axes=(2, 0, 1)
-            )  # C x H x W
-            # add batch dimension
-            state = np.expand_dims(transposed_env_skeleton, 0)
-            scaled_state = np.kron(state, np.ones((1, 1, self._scaling, self._scaling)))
+            state = utils.rgb_to_grayscale(env_skeleton)
+            state = np.transpose(state, axes=(2, 0, 1))  # C x H x W
 
-            return scaled_state
+            if self._representation == constants.PO_PIXEL:
+
+                height = state.shape[1]
+                width = state.shape[2]
+
+                # out of bounds needs to be different from wall pixels
+                OUT_OF_BOUNDS_PIXEL_VALUE = 0.9
+
+                # nominal bounds on field of view (pre-edge cases)
+                x_min = agent_position[1] - self._field_x
+                x_max = agent_position[1] + self._field_x
+                y_min = agent_position[0] - self._field_y
+                y_max = agent_position[0] + self._field_y
+
+                state = state[
+                    :,
+                    max(0, x_min) : min(x_max, width) + 1,
+                    max(0, y_min) : min(y_max, height) + 1,
+                ]
+
+                # edge case contingencies
+                if 0 > x_min:
+                    append_left = 0 - x_min
+                    state = np.concatenate(
+                        (
+                            OUT_OF_BOUNDS_PIXEL_VALUE
+                            * np.ones(
+                                (
+                                    state.shape[0],
+                                    append_left,
+                                    state.shape[2],
+                                )
+                            ),
+                            state,
+                        ),
+                        axis=2,
+                    )
+                if x_max >= width:
+                    append_right = x_max + 1 - width
+                    state = np.hstack(
+                        (
+                            state,
+                            OUT_OF_BOUNDS_PIXEL_VALUE
+                            * np.ones(
+                                (
+                                    state.shape[0],
+                                    append_right,
+                                    state.shape[2],
+                                )
+                            ),
+                        ),
+                    )
+                if 0 > y_min:
+                    append_below = 0 - y_min
+                    state = np.concatenate(
+                        (
+                            OUT_OF_BOUNDS_PIXEL_VALUE
+                            * np.ones(
+                                (
+                                    state.shape[0],
+                                    state.shape[1],
+                                    append_below,
+                                )
+                            ),
+                            state,
+                        ),
+                        axis=2,
+                    )
+                if y_max >= height:
+                    append_above = y_max + 1 - height
+                    state = np.concatenate(
+                        (
+                            state,
+                            OUT_OF_BOUNDS_PIXEL_VALUE
+                            * np.ones(
+                                (
+                                    state.shape[0],
+                                    state.shape[1],
+                                    append_above,
+                                )
+                            ),
+                        ),
+                        axis=2,
+                    )
+
+            # add batch dimension
+            state = np.expand_dims(state, 0)
+            state = np.kron(state, np.ones((1, 1, self._scaling, self._scaling)))
+
+            return state
 
     def _move_agent(self, delta: np.ndarray) -> float:
         """Move agent. If provisional new position is a wall, no-op."""
