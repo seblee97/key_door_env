@@ -181,7 +181,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
                     ]
                 else:
                     raise ValueError(f"Rewards keyword {rewards} not identified.")
-            elif isinstance(rewards, list):
+            elif isinstance(rewards, tuple):
                 reward_positions = list(self._rewards.keys())
                 reward_iterate = [
                     reward_positions[i] for i, r in enumerate(rewards) if not r
@@ -206,7 +206,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
                     ]
                 else:
                     raise ValueError(f"Keys keyword {keys} not identified.")
-            elif isinstance(keys, list):
+            elif isinstance(keys, tuple):
                 keys_iterate = [
                     self._key_positions[i] for i, k in enumerate(keys) if not k
                 ]
@@ -243,7 +243,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
 
         return skeleton
 
-    def _get_state_representation(
+    def get_state_representation(
         self,
         tuple_state: Optional[Tuple] = None,
     ) -> Union[tuple, np.ndarray]:
@@ -414,7 +414,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
 
         self._active = self._remain_active(reward=reward)
 
-        new_state = self._get_state_representation()
+        new_state = self.get_state_representation()
 
         self._episode_step_count += 1
 
@@ -483,6 +483,6 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
             self._test_episode_position_history = [tuple(self._agent_position)]
             self._test_episode_history = [self._env_skeleton()]
 
-        initial_state = self._get_state_representation()
+        initial_state = self.get_state_representation()
 
         return initial_state
