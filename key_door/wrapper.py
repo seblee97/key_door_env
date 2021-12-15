@@ -60,6 +60,9 @@ class Wrapper(base_environment.BaseEnvironment):
     def test_episode_position_history(self) -> np.ndarray:
         return self._env.test_episode_position_history
 
+    def get_state_representation(self, tuple_state: Optional[Tuple] = None):
+        return self._env.get_state_representation(tuple_state=tuple_state)
+
     # including these in the base wrapper is not ideal. Maybe rethink wrappers...
     def render(
         self,
