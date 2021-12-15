@@ -98,7 +98,7 @@ class VisualisationEnv(wrapper.Wrapper):
             ax is not None and fig is not None
         ) or save_name is not None, "Either must provide axis to plot heatmap over,"
         "r file name to save separate figure."
-        environment_map = self._env.env_skeleton(
+        environment_map = self._env._env_skeleton(
             rewards=None, keys=None, doors=None, agent=None
         )
 
@@ -113,8 +113,8 @@ class VisualisationEnv(wrapper.Wrapper):
                 (value - current_min_value) / (current_max_value - current_min_value)
             )[:-1]
 
+        fig = plt.figure()
         if save_name is not None:
-            fig = plt.figure()
             plt.imshow(environment_map, origin="lower", cmap=self.COLORMAP)
             plt.colorbar()
             fig.savefig(save_name, dpi=60)
@@ -123,6 +123,7 @@ class VisualisationEnv(wrapper.Wrapper):
             cax = divider.append_axes("right", size="5%", pad=0.05)
             im = ax.imshow(environment_map, origin="lower", cmap=self.COLORMAP)
             fig.colorbar(im, ax=ax, cax=cax, orientation="vertical")
+        plt.close()
 
     # def _average_values_over_key_states(
     #     self, values: Dict[Tuple[int], float]
