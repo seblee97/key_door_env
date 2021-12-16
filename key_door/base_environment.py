@@ -92,6 +92,14 @@ class BaseEnvironment(abc.ABC):
         return self._test_episode_history
 
     @property
+    def train_episode_partial_history(self) -> List[np.ndarray]:
+        return self._train_episode_partial_history
+
+    @property
+    def test_episode_partial_history(self) -> List[np.ndarray]:
+        return self._test_episode_partial_history
+
+    @property
     def train_episode_position_history(self) -> np.ndarray:
         return np.array(self._train_episode_position_history)
 
