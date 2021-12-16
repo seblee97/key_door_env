@@ -45,15 +45,21 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
 
         self._training: bool
         self._episode_step_count: int
-        self._train_episode_position_history: List[List[int]]
-        self._test_episode_position_history: List[List[int]]
-        self._train_episode_history: List[np.ndarray]
-        self._test_episode_history: List[np.ndarray]
+        self._representation = representation
+
         self._agent_position: np.ndarray
         self._rewards_state: np.ndarray
         self._keys_state: np.ndarray
 
-        self._representation = representation
+        self._train_episode_position_history: List[List[int]]
+        self._test_episode_position_history: List[List[int]]
+        self._train_episode_history: List[np.ndarray]
+        self._test_episode_history: List[np.ndarray]
+
+        if self._representation == constants.PO_PIXEL:
+            self._train_episode_partial_history: List[np.ndarray]
+            self._test_episode_partial_history: List[np.ndarray]
+
         self._episode_timeout = episode_timeout or np.inf
         self._scaling = scaling
         self._field_x = field_x
@@ -243,6 +249,74 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
 
         return skeleton
 
+    def _partial_observation(self, state, agent_position):
+
+        height = state.shape[0]
+        width = state.shape[1]
+
+        # out of bounds needs to be different from wall pixels
+        OUT_OF_BOUNDS_PIXEL = 0.2 * np.ones(3)
+
+        # nominal bounds on field of view (pre-edge cases)
+        x_min = agent_position[1] - self._field_x
+        x_max = agent_position[1] + self._field_x
+        y_min = agent_position[0] - self._field_y
+        y_max = agent_position[0] + self._field_y
+
+        state = state[
+            max(0, x_min) : min(x_max, width) + 1,
+            max(0, y_min) : min(y_max, height) + 1,
+            :,
+        ]
+
+        # edge case contingencies
+        if 0 > x_min:
+            append_left = 0 - x_min
+
+            fill = np.kron(
+                OUT_OF_BOUNDS_PIXEL,
+                np.ones((append_left, state.shape[1], 1)),
+            )
+            state = np.concatenate(
+                (fill, state),
+                axis=0,
+            )
+        if x_max >= width:
+            append_right = x_max + 1 - width
+
+            fill = np.kron(
+                OUT_OF_BOUNDS_PIXEL,
+                np.ones((append_right, state.shape[1], 1)),
+            )
+            state = np.concatenate(
+                (state, fill),
+                axis=0,
+            )
+        if 0 > y_min:
+            append_below = 0 - y_min
+
+            fill = np.kron(
+                OUT_OF_BOUNDS_PIXEL,
+                np.ones((state.shape[0], append_below, 1)),
+            )
+            state = np.concatenate(
+                (fill, state),
+                axis=1,
+            )
+        if y_max >= height:
+            append_above = y_max + 1 - height
+
+            fill = np.kron(
+                OUT_OF_BOUNDS_PIXEL,
+                np.ones((state.shape[0], append_above, 1)),
+            )
+            state = np.concatenate(
+                (state, fill),
+                axis=1,
+            )
+
+        return state
+
     def get_state_representation(
         self,
         tuple_state: Optional[Tuple] = None,
@@ -259,102 +333,22 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         elif self._representation in [constants.PIXEL, constants.PO_PIXEL]:
             if tuple_state is None:
                 agent_position = self._agent_position
-                env_skeleton = self._env_skeleton()  # H x W x C
+                state = self._env_skeleton()  # H x W x C
             else:
                 agent_position = tuple_state[:2]
                 keys = tuple_state[2 : 2 + len(self._key_positions)]
                 rewards = tuple_state[2 + len(self._key_positions) :]
-                env_skeleton = self._env_skeleton(
+                state = self._env_skeleton(
                     rewards=rewards, keys=keys, agent=agent_position
-                )
-            state = utils.rgb_to_grayscale(env_skeleton)
-            state = np.transpose(state, axes=(2, 0, 1))  # C x H x W
+                )  # H x W x C
 
             if self._representation == constants.PO_PIXEL:
+                state = self._partial_observation(
+                    state=state, agent_position=agent_position
+                )
 
-                height = state.shape[1]
-                width = state.shape[2]
-
-                # out of bounds needs to be different from wall pixels
-                OUT_OF_BOUNDS_PIXEL_VALUE = 0.9
-
-                # nominal bounds on field of view (pre-edge cases)
-                x_min = agent_position[1] - self._field_x
-                x_max = agent_position[1] + self._field_x
-                y_min = agent_position[0] - self._field_y
-                y_max = agent_position[0] + self._field_y
-
-                state = state[
-                    :,
-                    max(0, x_min) : min(x_max, width) + 1,
-                    max(0, y_min) : min(y_max, height) + 1,
-                ]
-
-                # edge case contingencies
-                if 0 > x_min:
-                    append_left = 0 - x_min
-                    state = np.concatenate(
-                        (
-                            OUT_OF_BOUNDS_PIXEL_VALUE
-                            * np.ones(
-                                (
-                                    state.shape[0],
-                                    append_left,
-                                    state.shape[2],
-                                )
-                            ),
-                            state,
-                        ),
-                        axis=1,
-                    )
-                if x_max >= width:
-                    append_right = x_max + 1 - width
-                    state = np.hstack(
-                        (
-                            state,
-                            OUT_OF_BOUNDS_PIXEL_VALUE
-                            * np.ones(
-                                (
-                                    state.shape[0],
-                                    append_right,
-                                    state.shape[2],
-                                )
-                            ),
-                        ),
-                    )
-                if 0 > y_min:
-                    append_below = 0 - y_min
-                    state = np.concatenate(
-                        (
-                            OUT_OF_BOUNDS_PIXEL_VALUE
-                            * np.ones(
-                                (
-                                    state.shape[0],
-                                    state.shape[1],
-                                    append_below,
-                                )
-                            ),
-                            state,
-                        ),
-                        axis=2,
-                    )
-                if y_max >= height:
-                    append_above = y_max + 1 - height
-                    state = np.concatenate(
-                        (
-                            state,
-                            OUT_OF_BOUNDS_PIXEL_VALUE
-                            * np.ones(
-                                (
-                                    state.shape[0],
-                                    state.shape[1],
-                                    append_above,
-                                )
-                            ),
-                        ),
-                        axis=2,
-                    )
-
+            state = utils.rgb_to_grayscale(state)
+            state = np.transpose(state, axes=(2, 0, 1))  # C x H x W
             # add batch dimension
             state = np.expand_dims(state, 0)
             state = np.kron(state, np.ones((1, 1, self._scaling, self._scaling)))
@@ -401,22 +395,33 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         ), f"Action given as {action}; must be 0: left, 1: up, 2: right or 3: down."
 
         reward = self._move_agent(delta=self.DELTAS[action])
+        new_state = self.get_state_representation()
+        skeleton = self._env_skeleton()
+
+        self._active = self._remain_active(reward=reward)
+        self._episode_step_count += 1
 
         if self._training:
             self._visitation_counts[self._agent_position[1]][
                 self._agent_position[0]
             ] += 1
             self._train_episode_position_history.append(tuple(self._agent_position))
-            self._train_episode_history.append(self._env_skeleton())
+            self._train_episode_history.append(skeleton)
+            if self._representation == constants.PO_PIXEL:
+                self._train_episode_partial_history.append(
+                    self._partial_observation(
+                        state=skeleton, agent_position=self._agent_position
+                    )
+                )
         else:
             self._test_episode_position_history.append(tuple(self._agent_position))
-            self._test_episode_history.append(self._env_skeleton())
-
-        self._active = self._remain_active(reward=reward)
-
-        new_state = self.get_state_representation()
-
-        self._episode_step_count += 1
+            self._test_episode_history.append(skeleton)
+            if self._representation == constants.PO_PIXEL:
+                self._test_episode_partial_history.append(
+                    self._partial_observation(
+                        state=skeleton, agent_position=self._agent_position
+                    )
+                )
 
         return reward, new_state
 
@@ -473,16 +478,29 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         self._keys_state = np.zeros(len(self._key_positions), dtype=int)
         self._rewards_state = np.zeros(len(self._rewards), dtype=int)
 
+        initial_state = self.get_state_representation()
+        skeleton = self._env_skeleton()
+
         if train:
             self._train_episode_position_history = [tuple(self._agent_position)]
-            self._train_episode_history = [self._env_skeleton()]
+            self._train_episode_history = [skeleton]
             self._visitation_counts[self._agent_position[1]][
                 self._agent_position[0]
             ] += 1
+            if self._representation == constants.PO_PIXEL:
+                self._train_episode_partial_history = [
+                    self._partial_observation(
+                        state=skeleton, agent_position=self._agent_position
+                    )
+                ]
         else:
             self._test_episode_position_history = [tuple(self._agent_position)]
-            self._test_episode_history = [self._env_skeleton()]
-
-        initial_state = self.get_state_representation()
+            self._test_episode_history = [skeleton]
+            if self._representation == constants.PO_PIXEL:
+                self._test_episode_partial_history = [
+                    self._partial_observation(
+                        state=skeleton, agent_position=self._agent_position
+                    )
+                ]
 
         return initial_state
