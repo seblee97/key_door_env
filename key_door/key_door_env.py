@@ -305,7 +305,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
                             ),
                             state,
                         ),
-                        axis=2,
+                        axis=1,
                     )
                 if x_max >= width:
                     append_right = x_max + 1 - width
