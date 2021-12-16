@@ -53,6 +53,14 @@ class Wrapper(base_environment.BaseEnvironment):
         return self._env.test_episode_history
 
     @property
+    def train_episode_partial_history(self) -> List[np.ndarray]:
+        return self._env.train_episode_partial_history
+
+    @property
+    def test_episode_partial_history(self) -> List[np.ndarray]:
+        return self._env.test_episode_partial_history
+
+    @property
     def train_episode_position_history(self) -> np.ndarray:
         return self._env.train_episode_position_history
 
