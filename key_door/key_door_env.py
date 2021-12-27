@@ -22,6 +22,9 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         scaling: Optional[int] = 1,
         field_x: Optional[int] = 1,
         field_y: Optional[int] = 1,
+        grayscale: bool = True,
+        batch_dimension: bool = True,
+        torch_axes: bool = True,
     ) -> None:
         """Class constructor.
 
@@ -64,6 +67,9 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         self._scaling = scaling
         self._field_x = field_x
         self._field_y = field_y
+        self._grayscale = grayscale
+        self._batch_dimension = batch_dimension
+        self._torch_axes = torch_axes
 
         self._setup_environment(
             map_ascii_path=map_ascii_path, map_yaml_path=map_yaml_path
@@ -347,11 +353,18 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
                     state=state, agent_position=agent_position
                 )
 
-            state = utils.rgb_to_grayscale(state)
-            state = np.transpose(state, axes=(2, 0, 1))  # C x H x W
-            # add batch dimension
-            state = np.expand_dims(state, 0)
-            state = np.kron(state, np.ones((1, 1, self._scaling, self._scaling)))
+            if self._grayscale:
+                state = utils.rgb_to_grayscale(state)
+
+            if self._torch_axes:
+                state = np.transpose(state, axes=(2, 0, 1))  # C x H x W
+                state = np.kron(state, np.ones((1, self._scaling, self._scaling)))
+            else:
+                state = np.kron(state, np.ones((self._scaling, self._scaling, 1)))
+
+            if self._batch_dimension:
+                # add batch dimension
+                state = np.expand_dims(state, 0)
 
             return state
 
