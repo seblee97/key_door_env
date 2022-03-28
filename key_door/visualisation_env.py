@@ -38,15 +38,15 @@ class VisualisationEnv(wrapper.Wrapper):
             fig = plt.figure()
             plt.imshow(
                 self._env._env_skeleton(
-                    rewards=format, keys=format, doors=format, agent=format
+                    rewards=format, keys=format, doors=format, agent=format, cue=format
                 ),
                 origin="lower",
             )
             fig.savefig(save_path, dpi=dpi)
         else:
             plt.imshow(
-                self._env.env_skeleton(
-                    rewards=format, keys=format, doors=format, agent=format
+                self._env._env_skeleton(
+                    rewards=format, keys=format, doors=format, agent=format, cue=format
                 ),
                 origin="lower",
             )
