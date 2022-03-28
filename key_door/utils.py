@@ -35,6 +35,15 @@ def parse_map_outline(map_file_path: str, mapping: Dict[str, int]) -> np.ndarray
     return multi_room_grid
 
 
+def parse_x_positions(map_yaml_path: str, data_key: str):
+    with open(map_yaml_path) as yaml_file:
+        map_data = yaml.load(yaml_file, yaml.SafeLoader)
+
+    positions = [tuple(p) for p in map_data[data_key]]
+
+    return positions
+
+
 def parse_map_positions(map_yaml_path: str) -> Tuple[List, List, List, List]:
     """Method to parse map settings from yaml file.
 
@@ -52,9 +61,16 @@ def parse_map_positions(map_yaml_path: str) -> Tuple[List, List, List, List]:
         map_data = yaml.load(yaml_file, yaml.SafeLoader)
 
     start_positions = [tuple(map_data[constants.START_POSITION])]
-    reward_positions = [tuple(rp) for rp in map_data[constants.REWARD_POSITIONS]]
-    key_positions = [tuple(kp) for kp in map_data[constants.KEY_POSITIONS]]
-    door_positions = [tuple(dp) for dp in map_data[constants.DOOR_POSITIONS]]
+
+    reward_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path, data_key=constants.REWARD_POSITIONS
+    )
+    key_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path, data_key=constants.KEY_POSITIONS
+    )
+    door_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path, data_key=constants.DOOR_POSITIONS
+    )
 
     reward_statistics = map_data[constants.REWARD_STATISTICS]
 
@@ -72,6 +88,69 @@ def parse_map_positions(map_yaml_path: str) -> Tuple[List, List, List, List]:
         door_positions,
         reward_positions,
         reward_statistics,
+    )
+
+
+def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, List]:
+    """Method to parse map settings from yaml file.
+
+    Args:
+        map_yaml_path: path to yaml file containing map config.
+
+    Returns:
+        initial_start_position: x,y coordinates for
+            agent at start of each episode.
+        key_positions: list of x, y coordinates of keys.
+        door_positions: list of x, y coordinates of doors.
+        reward_positions: list of x, y coordinates of rewards.
+    """
+    with open(map_yaml_path) as yaml_file:
+        map_data = yaml.load(yaml_file, yaml.SafeLoader)
+
+    start_positions = [tuple(map_data[constants.START_POSITION])]
+
+    silver_key_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path,
+        data_key=f"{constants.SILVER}_{constants.KEY_POSITIONS}",
+    )
+    gold_key_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path,
+        data_key=f"{constants.GOLD}_{constants.KEY_POSITIONS}",
+    )
+
+    door_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path,
+        data_key=constants.DOOR_POSITIONS,
+    )
+
+    reward_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path,
+        data_key=constants.REWARD_POSITIONS,
+    )
+
+    reward_statistics = map_data[constants.REWARD_STATISTICS]
+    cue_validities = map_data[constants.CUE_VALIDITIES]
+
+    assert (
+        len(start_positions) == 1
+    ), "maximally one start position 'S' should be specified in ASCII map."
+
+    assert len(door_positions) == len(
+        silver_key_positions
+    ), "number of key positions must equal number of door positions."
+
+    assert len(door_positions) == len(
+        gold_key_positions
+    ), "number of key positions must equal number of door positions."
+
+    return (
+        start_positions[0],
+        silver_key_positions,
+        gold_key_positions,
+        door_positions,
+        reward_positions,
+        reward_statistics,
+        cue_validities
     )
 
 
@@ -145,6 +224,50 @@ def configure_state_space(map_outline, key_positions, reward_positions):
     return (
         positional_state_space,
         key_possession_state_space,
+        rewards_received_state_space,
+        state_space,
+        wall_state_space,
+    )
+
+
+def configure_posner_state_space(
+    map_outline,
+    silver_key_positions,
+    gold_key_positions,
+    reward_positions,
+):
+    """Get state space for the environment from the parsed map.
+    Further split state space into walls, valid positions, key possessions etc.
+    """
+    state_indices = np.where(map_outline == 0)
+    wall_indices = np.where(map_outline == 1)
+
+    positional_state_space = list(zip(state_indices[1], state_indices[0]))
+    silver_key_possession_state_space = list(
+        itertools.product([0, 1], repeat=len(silver_key_positions))
+    )
+    gold_key_possession_state_space = list(
+        itertools.product([0, 1], repeat=len(gold_key_positions))
+    )
+    rewards_received_state_space = list(
+        itertools.product([0, 1], repeat=len(reward_positions))
+    )
+    state_space = [
+        i[0] + i[1] + i[2] + i[3]
+        for i in itertools.product(
+            positional_state_space,
+            silver_key_possession_state_space,
+            gold_key_possession_state_space,
+            rewards_received_state_space,
+        )
+    ]
+
+    wall_state_space = list(zip(wall_indices[1], wall_indices[0]))
+
+    return (
+        positional_state_space,
+        silver_key_possession_state_space,
+        gold_key_possession_state_space,
         rewards_received_state_space,
         state_space,
         wall_state_space,
