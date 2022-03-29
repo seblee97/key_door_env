@@ -164,7 +164,8 @@ class WillPosner(base_environment.BaseEnvironment):
     def _env_skeleton(
         self,
         rewards: Union[None, str, Tuple[int]] = "state",
-        keys: Union[None, str, Tuple[int]] = "state",
+        silver_keys: Union[None, str, Tuple[int]] = "state",
+        gold_keys: Union[None, str, Tuple[int]] = "state",
         doors: Union[None, str] = "state",
         agent: Union[None, str, np.ndarray] = "state",
         cue: Union[None, str, np.ndarray] = "state",
@@ -222,30 +223,23 @@ class WillPosner(base_environment.BaseEnvironment):
             for reward in reward_iterate:
                 skeleton[reward[::-1]] = [0.0, 0.5, 0.0]
 
-        if keys is not None:
-            if isinstance(keys, str):
-                if keys == constants.STATIONARY:
+        if silver_keys is not None:
+            if isinstance(silver_keys, str):
+                if silver_keys == constants.STATIONARY:
                     silver_keys_iterate = self._silver_key_positions
-                    gold_keys_iterate = self._gold_key_positions
-                elif keys == constants.STATE:
+                elif silver_keys == constants.STATE:
                     silver_keys_iterate = [
                         self._silver_key_positions[i]
                         for i, k in enumerate(self._silver_keys_state)
                         if (not self._gold_keys_state[i] and not k)
                     ]
-                    gold_keys_iterate = [
-                        self._gold_key_positions[i]
-                        for i, k in enumerate(self._gold_keys_state)
-                        if (not self._silver_keys_state[i] and not k)
-                    ]
                 else:
-                    raise ValueError(f"Keys keyword {keys} not identified.")
-            elif isinstance(keys, tuple):
+                    raise ValueError(f"Keys keyword {silver_keys} not identified.")
+            elif isinstance(silver_keys, tuple):
                 silver_keys_iterate = [
-                    self._silver_key_positions[i] for i, k in enumerate(keys) if not k
-                ]
-                gold_keys_iterate = [
-                    self._gold_key_positions[i] for i, k in enumerate(keys) if not k
+                    self._silver_key_positions[i]
+                    for i, k in enumerate(silver_keys)
+                    if not k
                 ]
             else:
                 raise ValueError(
@@ -255,6 +249,30 @@ class WillPosner(base_environment.BaseEnvironment):
             # show silver key in silver
             for key_position in silver_keys_iterate:
                 skeleton[tuple(key_position[::-1])] = [0.753, 0.753, 0.753]
+
+        if gold_keys is not None:
+            if isinstance(gold_keys, str):
+                if gold_keys == constants.STATIONARY:
+                    gold_keys_iterate = self._gold_key_positions
+                elif gold_keys == constants.STATE:
+                    gold_keys_iterate = [
+                        self._gold_key_positions[i]
+                        for i, k in enumerate(self._gold_keys_state)
+                        if (not self._silver_keys_state[i] and not k)
+                    ]
+                else:
+                    raise ValueError(f"Keys keyword {gold_keys} not identified.")
+            elif isinstance(gold_keys, tuple):
+                gold_keys_iterate = [
+                    self._gold_key_positions[i]
+                    for i, k in enumerate(gold_keys)
+                    if not k
+                ]
+            else:
+                raise ValueError(
+                    "Keys must be string with relevant keyword or keystate list"
+                )
+
             # show gold key in gold
             for key_position in gold_keys_iterate:
                 skeleton[tuple(key_position[::-1])] = [1.0, 0.843, 0.0]
@@ -293,9 +311,7 @@ class WillPosner(base_environment.BaseEnvironment):
                         pixel = self._cues[cue_index]
                     else:
                         pixel = constants.BLACK_PIXEL
-                    cue_line = np.tile(
-                       pixel, [1, skeleton.shape[1], 1]
-                    )
+                    cue_line = np.tile(pixel, [1, skeleton.shape[1], 1])
                     skeleton = np.vstack((cue_line, skeleton))
 
         return skeleton
@@ -388,10 +404,18 @@ class WillPosner(base_environment.BaseEnvironment):
                 state = self._env_skeleton()  # H x W x C
             else:
                 agent_position = tuple_state[:2]
-                keys = tuple_state[2 : 2 + len(self._key_positions)]
-                rewards = tuple_state[2 + len(self._key_positions) :]
+                silver_keys = tuple_state[2 : 2 + len(self._silver_key_positions)]
+                gold_keys = tuple_state[2 : 2 + len(self._gold_key_positions)]
+                rewards = tuple_state[
+                    2
+                    + len(self._silver_key_positions)
+                    + len(self._gold_key_positions) :
+                ]
                 state = self._env_skeleton(
-                    rewards=rewards, keys=keys, agent=agent_position
+                    rewards=rewards,
+                    silver_keys=silver_keys,
+                    gold_keys=gold_keys,
+                    agent=agent_position,
                 )  # H x W x C
 
             if self._representation == constants.PO_PIXEL:
@@ -546,7 +570,9 @@ class WillPosner(base_environment.BaseEnvironment):
             for s in np.random.random(size=len(self._cue_validities))
         ]
         self._correct_keys = []
-        for i, cv in enumerate(np.random.random(size=len(self._cue_validities)) < self._cue_validities):
+        for i, cv in enumerate(
+            np.random.random(size=len(self._cue_validities)) < self._cue_validities
+        ):
             if self._cues[i] == constants.GOLD_RGB:
                 if cv:
                     self._correct_keys.append(constants.GOLD)
