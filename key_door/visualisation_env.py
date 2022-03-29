@@ -38,7 +38,7 @@ class VisualisationEnv(wrapper.Wrapper):
             fig = plt.figure()
             plt.imshow(
                 self._env._env_skeleton(
-                    rewards=format, keys=format, doors=format, agent=format, cue=format
+                    rewards=format, silver_keys=format, gold_keys=format, doors=format, agent=format, cue=format
                 ),
                 origin="lower",
             )
@@ -46,7 +46,7 @@ class VisualisationEnv(wrapper.Wrapper):
         else:
             plt.imshow(
                 self._env._env_skeleton(
-                    rewards=format, keys=format, doors=format, agent=format, cue=format
+                    rewards=format, silver_keys=format, gold_keys=format, doors=format, agent=format, cue=format
                 ),
                 origin="lower",
             )
