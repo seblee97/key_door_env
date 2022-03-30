@@ -131,9 +131,11 @@ class WillPosner(base_environment.BaseEnvironment):
         averaged_values = {}
         for state in self._positional_state_space:
             non_positional_set = [
-                values[state + i[0] + i[1]]
+                values[state + i[0] + i[1] + i[2]]
                 for i in itertools.product(
-                    self._key_possession_state_space, self._rewards_received_state_space
+                    self._silver_key_possession_state_space,
+                    self._gold_key_possession_state_space,
+                    self._rewards_received_state_space,
                 )
             ]
             non_positional_mean = np.mean(non_positional_set, axis=0)
@@ -152,12 +154,17 @@ class WillPosner(base_environment.BaseEnvironment):
                 for each combination of non-positional state.
         """
         value_combinations = {}
-        for key_state in self._key_possession_state_space:
-            for reward_state in self._rewards_received_state_space:
-                value_combination = {}
-                for state in self._positional_state_space:
-                    value_combination[state] = values[state + key_state + reward_state]
-                value_combinations[key_state + reward_state] = value_combination
+        for silver_key_state in self._silver_key_possession_state_space:
+            for gold_key_state in self._gold_key_possession_state_space:
+                for reward_state in self._rewards_received_state_space:
+                    value_combination = {}
+                    for state in self._positional_state_space:
+                        value_combination[state] = values[
+                            state + silver_key_state + gold_key_state + reward_state
+                        ]
+                    value_combinations[
+                        silver_key_state + gold_key_state + reward_state
+                    ] = value_combination
 
         return value_combinations
 
