@@ -616,6 +616,4 @@ class WillPosner(base_environment.BaseEnvironment):
                     )
                 ]
 
-        print(self._cues, self._correct_keys)
-
         return initial_state
