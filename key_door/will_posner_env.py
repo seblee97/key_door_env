@@ -579,22 +579,25 @@ class WillPosner(base_environment.BaseEnvironment):
         ]
         self._cues = []
 
-        # P(cue = gold | key = gold)
-        cue_conditional = (2 * self._cue_validity**2 - self._cue_validity) / (
-            2 * self._cue_validity - 1
-        )
+        # P(cue = gold | key = gold) = P(key = gold | cue = gold)
+        # if prior is uniform, which is the case if we have a single cue validity
+        cue_conditional = self._cue_validity
+        # else via Bayes theorem it more generally would be:
+        # cue_conditional = (
+        # 2 * silver_cue_validity * gold_cue_validity - gold_cue_validity
+        # ) / (silver_cue_validity + gold_cue_validity - 1)
 
-        for i, correct_key in enumerate(self._correct_keys):
-            if self._cues[i] == constants.GOLD_RGB:
+        for correct_key in self._correct_keys:
+            if correct_key == constants.GOLD:
                 if np.random.random() < cue_conditional:
-                    self._correct_keys.append(constants.GOLD)
+                    self._cues.append(constants.GOLD_RGB)
                 else:
-                    self._correct_keys.append(constants.SILVER)
-            elif self._cues[i] == constants.SILVER_RGB:
+                    self._cues.append(constants.SILVER_RGB)
+            elif correct_key == constants.SILVER:
                 if np.random.random() < cue_conditional:
-                    self._correct_keys.append(constants.SILVER)
+                    self._cues.append(constants.SILVER_RGB)
                 else:
-                    self._correct_keys.append(constants.GOLD)
+                    self._cues.append(constants.GOLD_RGB)
 
         initial_state = self.get_state_representation()
         skeleton = self._env_skeleton()
