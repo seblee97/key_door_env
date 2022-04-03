@@ -103,7 +103,7 @@ class VisualisationEnv(wrapper.Wrapper):
         ) or save_name is not None, "Either must provide axis to plot heatmap over,"
         "r file name to save separate figure."
         environment_map = self._env._env_skeleton(
-            rewards=None, silver_keys=None, gold_keys=None, doors=None, agent=None
+            rewards=None, silver_keys=None, gold_keys=None, doors=None, agent=None, cue=None
         )
 
         all_values = list(heatmap.values())
