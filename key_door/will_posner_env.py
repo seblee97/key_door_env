@@ -575,7 +575,7 @@ class WillPosner(base_environment.BaseEnvironment):
         
         self._correct_keys = [
             constants.GOLD if s < 0.5 else constants.SILVER
-            for s in np.random.random(size=len(self._total_rewards))
+            for s in np.random.random(size=self._total_rewards)
         ]
         self._cues = []
 
