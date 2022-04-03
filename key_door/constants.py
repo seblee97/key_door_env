@@ -26,4 +26,4 @@ SILVER = "silver"
 BLACK_PIXEL = [0.0, 0.0, 0.0]
 GOLD_RGB = [1.0, 0.843, 0.0]
 SILVER_RGB = [0.753, 0.753, 0.753]
-CUE_VALIDITIES = "cue_validities"
+CUE_VALIDITY = "cue_validity"
