@@ -129,7 +129,7 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
     )
 
     reward_statistics = map_data[constants.REWARD_STATISTICS]
-    cue_validities = map_data[constants.CUE_VALIDITIES]
+    cue_validity = map_data[constants.CUE_VALIDITY]
 
     assert (
         len(start_positions) == 1
@@ -150,7 +150,7 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
         door_positions,
         reward_positions,
         reward_statistics,
-        cue_validities
+        cue_validity
     )
 
 
