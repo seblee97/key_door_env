@@ -462,11 +462,17 @@ class WillPosner(base_environment.BaseEnvironment):
 
         if tuple(self._agent_position) in self._silver_key_positions:
             key_index = self._silver_key_positions.index(tuple(self._agent_position))
-            if not self._silver_keys_state[key_index]:
+            if (
+                not self._silver_keys_state[key_index]
+                and not self._gold_keys_state[key_index]
+            ):
                 self._silver_keys_state[key_index] = 1
         if tuple(self._agent_position) in self._gold_key_positions:
             key_index = self._gold_key_positions.index(tuple(self._agent_position))
-            if not self._gold_keys_state[key_index]:
+            if (
+                not self._gold_keys_state[key_index]
+                and not self._silver_keys_state[key_index]
+            ):
                 self._gold_keys_state[key_index] = 1
 
         return self._compute_reward()
@@ -572,7 +578,7 @@ class WillPosner(base_environment.BaseEnvironment):
         self._silver_keys_state = np.zeros(len(self._silver_key_positions), dtype=int)
         self._gold_keys_state = np.zeros(len(self._gold_key_positions), dtype=int)
         self._rewards_state = np.zeros(len(self._rewards), dtype=int)
-        
+
         self._correct_keys = [
             constants.GOLD if s < 0.5 else constants.SILVER
             for s in np.random.random(size=self._total_rewards)
