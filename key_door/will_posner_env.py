@@ -94,7 +94,7 @@ class WillPosner(base_environment.BaseEnvironment):
             self._door_positions,
             reward_positions,
             reward_statistics,
-            self._cue_validities,
+            self._cue_validity,
         ) = utils.parse_posner_map_positions(map_yaml_path)
 
         self._rewards = utils.setup_reward_statistics(
@@ -572,21 +572,26 @@ class WillPosner(base_environment.BaseEnvironment):
         self._silver_keys_state = np.zeros(len(self._silver_key_positions), dtype=int)
         self._gold_keys_state = np.zeros(len(self._gold_key_positions), dtype=int)
         self._rewards_state = np.zeros(len(self._rewards), dtype=int)
-        self._cues = [
-            constants.GOLD_RGB if s < 0.5 else constants.SILVER_RGB
-            for s in np.random.random(size=len(self._cue_validities))
+        
+        self._correct_keys = [
+            constants.GOLD if s < 0.5 else constants.SILVER
+            for s in np.random.random(size=len(self._total_rewards))
         ]
-        self._correct_keys = []
-        for i, cv in enumerate(
-            np.random.random(size=len(self._cue_validities)) < self._cue_validities
-        ):
+        self._cues = []
+
+        # P(cue = gold | key = gold)
+        cue_conditional = (2 * self._cue_validity**2 - self._cue_validity) / (
+            2 * self._cue_validity - 1
+        )
+
+        for i, correct_key in enumerate(self._correct_keys):
             if self._cues[i] == constants.GOLD_RGB:
-                if cv:
+                if np.random.random() < cue_conditional:
                     self._correct_keys.append(constants.GOLD)
                 else:
                     self._correct_keys.append(constants.SILVER)
             elif self._cues[i] == constants.SILVER_RGB:
-                if cv:
+                if np.random.random() < cue_conditional:
                     self._correct_keys.append(constants.SILVER)
                 else:
                     self._correct_keys.append(constants.GOLD)
