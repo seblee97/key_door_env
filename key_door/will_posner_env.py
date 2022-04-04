@@ -425,8 +425,7 @@ class WillPosner(base_environment.BaseEnvironment):
                 ]
                 state = self._env_skeleton(
                     rewards=rewards,
-                    silver_keys=silver_keys,
-                    gold_keys=gold_keys,
+                    keys={constants.SILVER: silver_keys, constants.GOLD: gold_keys},
                     agent=agent_position,
                 )  # H x W x C
 
