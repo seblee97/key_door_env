@@ -38,7 +38,11 @@ class VisualisationEnv(wrapper.Wrapper):
             fig = plt.figure()
             plt.imshow(
                 self._env._env_skeleton(
-                    rewards=format, silver_keys=format, gold_keys=format, doors=format, agent=format, cue=format
+                    rewards=format,
+                    keys={k: format for k in self._key_ids},
+                    doors=format,
+                    agent=format,
+                    cue=format,
                 ),
                 origin="lower",
             )
@@ -46,7 +50,12 @@ class VisualisationEnv(wrapper.Wrapper):
         else:
             plt.imshow(
                 self._env._env_skeleton(
-                    rewards=format, silver_keys=format, gold_keys=format, doors=format, agent=format, cue=format
+                    rewards=format,
+                    silver_keys=format,
+                    gold_keys=format,
+                    doors=format,
+                    agent=format,
+                    cue=format,
                 ),
                 origin="lower",
             )
@@ -103,7 +112,12 @@ class VisualisationEnv(wrapper.Wrapper):
         ) or save_name is not None, "Either must provide axis to plot heatmap over,"
         "r file name to save separate figure."
         environment_map = self._env._env_skeleton(
-            rewards=None, silver_keys=None, gold_keys=None, doors=None, agent=None, cue=None
+            rewards=None,
+            silver_keys=None,
+            gold_keys=None,
+            doors=None,
+            agent=None,
+            cue=None,
         )
 
         all_values = list(heatmap.values())
