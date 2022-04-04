@@ -51,6 +51,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
         self._representation = representation
 
         self._agent_position: np.ndarray
+        self._key_ids = [constants.KEYS]
         self._rewards_state: np.ndarray
         self._keys_state: np.ndarray
 
@@ -159,9 +160,10 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
     def _env_skeleton(
         self,
         rewards: Union[None, str, Tuple[int]] = "state",
-        keys: Union[None, str, Tuple[int]] = "state",
+        keys: Dict[str, Union[None, str, Tuple[int]]] = {"keys": "state"},
         doors: Union[None, str] = "state",
         agent: Union[None, str, np.ndarray] = "state",
+        cue: Union[None, str, np.ndarray] = None,
     ) -> np.ndarray:
         """Get a 'skeleton' of map e.g. for visualisation purposes.
 
@@ -206,6 +208,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
             for reward in reward_iterate:
                 skeleton[reward[::-1]] = [1.0, 0.0, 0.0]
 
+        keys = keys[constants.KEYS]
         if keys is not None:
             if isinstance(keys, str):
                 if keys == constants.STATIONARY:
