@@ -51,6 +51,7 @@ class WillPosner(base_environment.BaseEnvironment):
         self._representation = representation
 
         self._agent_position: np.ndarray
+        self._key_ids = [constants.GOLD, constants.SILVER]
         # self._rewards_state: np.ndarray
         # self._keys_state: np.ndarray
 
@@ -171,8 +172,10 @@ class WillPosner(base_environment.BaseEnvironment):
     def _env_skeleton(
         self,
         rewards: Union[None, str, Tuple[int]] = "state",
-        silver_keys: Union[None, str, Tuple[int]] = "state",
-        gold_keys: Union[None, str, Tuple[int]] = "state",
+        keys: Dict[str, Union[None, str, Tuple[int]]] = {
+            "gold": "state",
+            "silver": "state",
+        },
         doors: Union[None, str] = "state",
         agent: Union[None, str, np.ndarray] = "state",
         cue: Union[None, str, np.ndarray] = "state",
@@ -230,6 +233,7 @@ class WillPosner(base_environment.BaseEnvironment):
             for reward in reward_iterate:
                 skeleton[reward[::-1]] = [0.0, 0.5, 0.0]
 
+        silver_keys = keys[constants.SILVER]
         if silver_keys is not None:
             if isinstance(silver_keys, str):
                 if silver_keys == constants.STATIONARY:
@@ -257,6 +261,7 @@ class WillPosner(base_environment.BaseEnvironment):
             for key_position in silver_keys_iterate:
                 skeleton[tuple(key_position[::-1])] = [0.753, 0.753, 0.753]
 
+        gold_keys = keys[constants.GOLD]
         if gold_keys is not None:
             if isinstance(gold_keys, str):
                 if gold_keys == constants.STATIONARY:
