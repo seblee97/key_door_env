@@ -51,8 +51,7 @@ class VisualisationEnv(wrapper.Wrapper):
             plt.imshow(
                 self._env._env_skeleton(
                     rewards=format,
-                    silver_keys=format,
-                    gold_keys=format,
+                    keys={k: format for k in self._key_ids},
                     doors=format,
                     agent=format,
                     cue=format,
@@ -113,8 +112,7 @@ class VisualisationEnv(wrapper.Wrapper):
         "r file name to save separate figure."
         environment_map = self._env._env_skeleton(
             rewards=None,
-            silver_keys=None,
-            gold_keys=None,
+            keys={k: None for k in self._key_ids},
             doors=None,
             agent=None,
             cue=None,
