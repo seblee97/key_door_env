@@ -103,6 +103,7 @@ class WillPosner(base_environment.BaseEnvironment):
         )
 
         self._total_rewards = len(self._rewards)
+        self._accessible_rewards = len(self._rewards)
 
         (
             self._positional_state_space,
@@ -212,6 +213,10 @@ class WillPosner(base_environment.BaseEnvironment):
                             wrong_keys_collected.append(True)
                         else:
                             wrong_keys_collected.append(False)
+
+                    self._accessible_rewards = len(self._rewards) - sum(
+                        wrong_keys_collected
+                    )
 
                     reward_iterate = [
                         reward_positions[i]
@@ -557,7 +562,7 @@ class WillPosner(base_environment.BaseEnvironment):
         """
         conditions = [
             self._episode_step_count == self._episode_timeout,
-            len(self._rewards_received) == self._total_rewards,
+            len(self._rewards_received) == self._accessible_rewards,
         ]
         return not any(conditions)
 
