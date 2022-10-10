@@ -1,14 +1,13 @@
 import copy
 import itertools
-import re
-from typing import Callable, Dict, List, Optional, Tuple, Union
+
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-import yaml
 from key_door import base_environment, constants, utils
 
 
-class WillPosner(base_environment.BaseEnvironment):
+class PosnerEnv(base_environment.BaseEnvironment):
     """Grid world environment with multiple rooms.
     Between each room is a door, that requires a key to unlock.
     """
@@ -92,11 +91,25 @@ class WillPosner(base_environment.BaseEnvironment):
             self._starting_xy,
             self._silver_key_positions,
             self._gold_key_positions,
+            self._correct_keys_change,
             self._door_positions,
             reward_positions,
             reward_statistics,
-            self._cue_validity,
+            self._cue_specification,
         ) = utils.parse_posner_map_positions(map_yaml_path)
+
+        self._cue_format = self._cue_specification[constants.CUE_FORMAT]
+        if self._cue_format is not None:
+            self._cue_validity = self._cue_specification[constants.CUE_VALIDITY]
+            if self._cue_format == constants.POSNER:
+                self._cue_size = self._cue_specification[constants.CUE_SIZE]
+                self._cue_line_depth = self._cue_specification[constants.CUE_LINE_DEPTH]
+                self._num_cues = self._cue_specification[constants.NUM_CUES]
+                self._cue_index = np.random.choice(self._num_cues)
+
+                assert (
+                    self._cue_size * self._num_cues < self._map.shape[1]
+                ), "cue line (size of cue * number of cues) must be less than width of map"
 
         self._rewards = utils.setup_reward_statistics(
             reward_positions, reward_statistics
@@ -104,6 +117,14 @@ class WillPosner(base_environment.BaseEnvironment):
 
         self._total_rewards = len(self._rewards)
         self._accessible_rewards = len(self._rewards)
+
+        if self._correct_keys_change:
+            pass
+        else:
+            self._correct_keys = [
+                constants.GOLD if s < 0.5 else constants.SILVER
+                for s in np.random.random(size=self._total_rewards)
+            ]
 
         (
             self._positional_state_space,
@@ -320,15 +341,37 @@ class WillPosner(base_environment.BaseEnvironment):
         if cue is not None:
             if isinstance(cue, str):
                 if cue == constants.STATE:
-                    cue_index = max(
-                        len(np.trim_zeros(self._silver_keys_state)),
-                        len(np.trim_zeros(self._gold_keys_state)),
-                    )
-                    if cue_index < len(self._cues):
-                        pixel = self._cues[cue_index]
+                    if self._cue_format is not None:
+                        if self._cue_format == constants.POSNER:
+                            cue_index = max(
+                                len(np.trim_zeros(self._silver_keys_state)),
+                                len(np.trim_zeros(self._gold_keys_state)),
+                            )
+                            if cue_index < len(self._cues):
+                                cue_line = self._cues[cue_index]
+                            else:
+                                cue_line = np.tile(
+                                    constants.BLACK_PIXEL,
+                                    [self._cue_line_depth, skeleton.shape[1], 1],
+                                )
+                        elif self._cue_format == constants.SINGLE_BAR:
+                            cue_index = max(
+                                len(np.trim_zeros(self._silver_keys_state)),
+                                len(np.trim_zeros(self._gold_keys_state)),
+                            )
+                            if cue_index < len(self._cues):
+                                cue_line = self._cues[cue_index]
+                            else:
+                                cue_line = np.tile(
+                                    constants.BLACK_PIXEL,
+                                    [self._cue_line_depth, skeleton.shape[1], 1],
+                                )
                     else:
-                        pixel = constants.BLACK_PIXEL
-                    cue_line = np.tile(pixel, [1, skeleton.shape[1], 1])
+                        cue_line = np.tile(
+                            constants.BLACK_PIXEL,
+                            [self._cue_line_depth, skeleton.shape[1], 1],
+                        )
+
                     skeleton = np.vstack((cue_line, skeleton))
 
         return skeleton
@@ -566,6 +609,78 @@ class WillPosner(base_environment.BaseEnvironment):
         ]
         return not any(conditions)
 
+    def _setup_posner_cues(self):
+        cues = []
+        # P(cue = gold | key = gold) = P(key = gold | cue = gold)
+        # if prior is uniform, which is the case if we have a single cue validity
+        cue_conditional = self._cue_validity
+        # else via Bayes theorem it more generally would be:
+        # cue_conditional = (
+        # 2 * silver_cue_validity * gold_cue_validity - gold_cue_validity
+        # ) / (silver_cue_validity + gold_cue_validity - 1)
+
+        for correct_key in self._correct_keys:
+            cue_line = np.tile(
+                constants.BLACK_PIXEL, [self._cue_line_depth, self._map.shape[1], 1]
+            )
+            distractor_directions = np.repeat(
+                np.random.random(self._num_cues) > 0.5, self._cue_size
+            )
+
+            cue_line[
+                :, self._cue_size * np.where(distractor_directions), :
+            ] = constants.SILVER_RGB
+            cue_line[
+                :, self._cue_size * np.where(distractor_directions == False), :
+            ] = constants.GOLD_RGB
+            if correct_key == constants.GOLD:
+                if np.random.random() < cue_conditional:
+                    cue_pixel = constants.GOLD_RGB
+                else:
+                    cue_pixel = constants.SILVER_RGB
+            elif correct_key == constants.SILVER:
+                if np.random.random() < cue_conditional:
+                    cue_pixel = constants.SILVER_RGB
+                else:
+                    cue_pixel = constants.GOLD_RGB
+            cue_line[
+                :,
+                self._cue_size
+                * self._cue_index : self._cue_size
+                * (self._cue_index + 1),
+                :,
+            ] = cue_pixel
+
+            cues.append(cue_line)
+
+        return cues
+
+    def _setup_block_cues(self):
+        cues = []
+        # P(cue = gold | key = gold) = P(key = gold | cue = gold)
+        # if prior is uniform, which is the case if we have a single cue validity
+        cue_conditional = self._cue_validity
+        # else via Bayes theorem it more generally would be:
+        # cue_conditional = (
+        # 2 * silver_cue_validity * gold_cue_validity - gold_cue_validity
+        # ) / (silver_cue_validity + gold_cue_validity - 1)
+
+        for correct_key in self._correct_keys:
+            if correct_key == constants.GOLD:
+                if np.random.random() < cue_conditional:
+                    pixel = constants.GOLD_RGB
+                else:
+                    pixel = constants.SILVER_RGB
+            elif correct_key == constants.SILVER:
+                if np.random.random() < cue_conditional:
+                    pixel = constants.SILVER_RGB
+                else:
+                    pixel = constants.GOLD_RGB
+            cue_line = np.tile(pixel, [1, skeleton.shape[1], 1])
+            cues.append(cue_line)
+
+        return cues
+
     def reset_environment(
         self, train: bool = True, map_yaml_path: Optional[str] = None
     ) -> Tuple[int, int, int]:
@@ -588,31 +703,16 @@ class WillPosner(base_environment.BaseEnvironment):
         self._gold_keys_state = np.zeros(len(self._gold_key_positions), dtype=int)
         self._rewards_state = np.zeros(len(self._rewards), dtype=int)
 
-        self._correct_keys = [
-            constants.GOLD if s < 0.5 else constants.SILVER
-            for s in np.random.random(size=self._total_rewards)
-        ]
-        self._cues = []
+        if self._correct_keys_change:
+            self._correct_keys = [
+                constants.GOLD if s < 0.5 else constants.SILVER
+                for s in np.random.random(size=self._total_rewards)
+            ]
 
-        # P(cue = gold | key = gold) = P(key = gold | cue = gold)
-        # if prior is uniform, which is the case if we have a single cue validity
-        cue_conditional = self._cue_validity
-        # else via Bayes theorem it more generally would be:
-        # cue_conditional = (
-        # 2 * silver_cue_validity * gold_cue_validity - gold_cue_validity
-        # ) / (silver_cue_validity + gold_cue_validity - 1)
-
-        for correct_key in self._correct_keys:
-            if correct_key == constants.GOLD:
-                if np.random.random() < cue_conditional:
-                    self._cues.append(constants.GOLD_RGB)
-                else:
-                    self._cues.append(constants.SILVER_RGB)
-            elif correct_key == constants.SILVER:
-                if np.random.random() < cue_conditional:
-                    self._cues.append(constants.SILVER_RGB)
-                else:
-                    self._cues.append(constants.GOLD_RGB)
+        if self._cue_format == constants.POSNER:
+            self._cues = self._setup_posner_cues()
+        elif self._cue_format == constants.SINGLE_BAR:
+            self._cues = self._setup_block_cues()
 
         initial_state = self.get_state_representation()
         skeleton = self._env_skeleton()
