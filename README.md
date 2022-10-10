@@ -37,6 +37,21 @@ copy to the right without the special characters: these two ascii codes will beh
 made in the YAML file. 
 
 #### B. YAML File
+
+There are three map classes: KeyDoor, Posner, SpatialKeys. Each has slightly different yaml file structure and requirements.
+
+KeyDoor is the simplest environment where each room has a single key that 
+needs to be collected to open the door to the next room.
+
+Posner is based on the extended Posner task from [Yu & Dayan](https://pubmed.ncbi.nlm.nih.gov/15944135/). 
+Each room contains two keys (one silver and one gold) both of which open the door to the next room. However 
+only one of them is "correct"; if the other is collected first the reward in the next room disappears. It is 
+possible to add cues of various kinds to the map that determine (with some probability) which key is correct in 
+a given room in a given episode.
+
+SpatialKeys is very similar to the Posner environment but here the colors of the keys have no relevance. Only the 
+position of the key is important.
+
 ```
 start_position: [1, 1]
 
@@ -80,7 +95,7 @@ env = key_door_env.KeyDoorGridworld(
 )
 ```
 
-There principle method is the _step_ method, which takes an action index and returns the next state. 
+The principle method is the _step_ method, which takes an action index and returns the next state. 
 The available actions are up, down, left and right. The constructor to the environment class takes three arguments: 
 the path to the .txt file, the path to the .yaml file, and a field called "representation". This final argument can
 either be given as _agent_position_, or _pixel_. The former dictates that the output of the _step_ method is the state represented by an x, y 
