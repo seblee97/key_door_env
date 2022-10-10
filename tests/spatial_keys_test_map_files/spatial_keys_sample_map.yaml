@@ -1,0 +1,27 @@
+start_position: [1, 1]
+
+key_1_positions:
+    - [2, 5]
+    - [20, 3]
+
+key_2_positions:
+    - [12, 2]
+    - [23, 5]
+
+correct_keys_change: False
+color_change: True
+
+door_positions:
+    - [15, 1]
+    - [24, 4]
+
+reward_positions:
+    - [17, 4]
+    - [31, 5]
+
+# provide either one set of statistics (used for all rewards)
+# or one set of statistics for each reward
+reward_statistics:
+    gaussian:
+        mean: 1
+        variance: 0
