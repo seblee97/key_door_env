@@ -118,6 +118,8 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
         data_key=f"{constants.GOLD}_{constants.KEY_POSITIONS}",
     )
 
+    correct_keys_change = map_data[constants.CORRECT_KEYS_CHANGE]
+
     door_positions = parse_x_positions(
         map_yaml_path=map_yaml_path,
         data_key=constants.DOOR_POSITIONS,
@@ -129,7 +131,16 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
     )
 
     reward_statistics = map_data[constants.REWARD_STATISTICS]
-    cue_validity = map_data[constants.CUE_VALIDITY]
+    cue_specification = {
+        k: map_data.get(k)
+        for k in [
+            constants.CUE_FORMAT,
+            constants.CUE_VALIDITY,
+            constants.CUE_SIZE,
+            constants.NUM_CUES,
+            constants.CUE_LINE_DEPTH,
+        ]
+    }
 
     assert (
         len(start_positions) == 1
@@ -147,10 +158,80 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
         start_positions[0],
         silver_key_positions,
         gold_key_positions,
+        correct_keys_change,
         door_positions,
         reward_positions,
         reward_statistics,
-        cue_validity,
+        cue_specification,
+    )
+
+
+def parse_spatial_keys_maze_map_positions(
+    map_yaml_path: str,
+) -> Tuple[List, List, List, List]:
+    """Method to parse map settings from yaml file.
+
+    Args:
+        map_yaml_path: path to yaml file containing map config.
+
+    Returns:
+        initial_start_position: x,y coordinates for
+            agent at start of each episode.
+        key_positions: list of x, y coordinates of keys.
+        door_positions: list of x, y coordinates of doors.
+        reward_positions: list of x, y coordinates of rewards.
+    """
+    with open(map_yaml_path) as yaml_file:
+        map_data = yaml.load(yaml_file, yaml.SafeLoader)
+
+    start_positions = [tuple(map_data[constants.START_POSITION])]
+
+    key_1_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path,
+        data_key=f"{constants.KEY}_1_{constants.POSITIONS}",
+    )
+
+    key_2_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path,
+        data_key=f"{constants.KEY}_2_{constants.POSITIONS}",
+    )
+
+    correct_keys_change = map_data[constants.CORRECT_KEYS_CHANGE]
+    color_change = map_data[constants.COLOR_CHANGE]
+
+    door_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path,
+        data_key=constants.DOOR_POSITIONS,
+    )
+
+    reward_positions = parse_x_positions(
+        map_yaml_path=map_yaml_path,
+        data_key=constants.REWARD_POSITIONS,
+    )
+
+    reward_statistics = map_data[constants.REWARD_STATISTICS]
+
+    assert (
+        len(start_positions) == 1
+    ), "maximally one start position 'S' should be specified in ASCII map."
+
+    assert len(door_positions) == len(
+        key_1_positions
+    ), "number of key positions must equal number of door positions."
+
+    assert len(door_positions) == len(
+        key_2_positions
+    ), "number of key positions must equal number of door positions."
+
+    return (
+        start_positions[0],
+        key_1_positions,
+        key_2_positions,
+        correct_keys_change,
+        color_change,
+        door_positions,
+        reward_positions,
+        reward_statistics,
     )
 
 
