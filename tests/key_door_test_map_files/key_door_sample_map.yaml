@@ -1,0 +1,20 @@
+start_position: [1, 1]
+
+key_positions:
+    - [2, 5] # key for door 1
+    - [23, 5] # key for door 2
+
+door_positions:
+    - [15, 1] # door 1 
+    - [24, 4] # door 2 
+
+reward_positions:
+    - [17, 4]
+    - [31, 5]
+
+# provide either one set of statistics (used for all rewards)
+# or one set of statistics for each reward
+reward_statistics:
+    gaussian:
+        mean: 1
+        variance: 0
