@@ -1,12 +1,24 @@
 start_position: [1, 1]
 
-key_positions:
-    - [2, 5] # key for door 1
-    - [23, 5] # key for door 2
+silver_key_positions:
+    - [2, 5]
+    - [20, 3]
+
+gold_key_positions:
+    - [6, 2]
+    - [23, 5]
+
+correct_keys_change: False
+    
+cue_format: posner
+cue_validity: 1
+cue_size: 1
+cue_line_depth: 2
+num_cues: 3
 
 door_positions:
-    - [15, 1] # door 1 
-    - [24, 4] # door 2 
+    - [15, 1]
+    - [24, 4]
 
 reward_positions:
     - [17, 4]

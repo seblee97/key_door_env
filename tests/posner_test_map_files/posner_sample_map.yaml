@@ -1,0 +1,32 @@
+start_position: [1, 1]
+
+silver_key_positions:
+    - [2, 5]
+    - [20, 3]
+
+gold_key_positions:
+    - [12, 2]
+    - [23, 5]
+
+correct_keys_change: False
+    
+cue_format: posner
+cue_validity: 1
+cue_size: 5
+cue_line_depth: 2
+num_cues: 6
+
+door_positions:
+    - [15, 1]
+    - [24, 4]
+
+reward_positions:
+    - [17, 4]
+    - [31, 5]
+
+# provide either one set of statistics (used for all rewards)
+# or one set of statistics for each reward
+reward_statistics:
+    gaussian:
+        mean: 1
+        variance: 0
