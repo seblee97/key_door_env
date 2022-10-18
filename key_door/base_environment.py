@@ -1,7 +1,8 @@
 import abc
-from typing import List, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
+
 from key_door import constants
 
 
@@ -35,10 +36,43 @@ class BaseEnvironment(abc.ABC):
         constants.REWARD_CHARACTER: 0,
     }
 
-    def __init__(self):
+    def __init__(
+        self,
+        representation: str,
+        episode_timeout: Optional[Union[int, None]] = None,
+        frame_stack: Optional[Union[int, None]] = None,
+        scaling: Optional[int] = 1,
+        field_x: Optional[int] = 1,
+        field_y: Optional[int] = 1,
+        grayscale: bool = True,
+        batch_dimension: bool = True,
+        torch_axes: bool = True,
+    ):
+        self._active: bool = False
+
         self._training: bool
-        self._active: bool
         self._episode_step_count: int
+        self._representation = representation
+
+        self._agent_position: np.ndarray
+
+        self._train_episode_position_history: List[List[int]]
+        self._test_episode_position_history: List[List[int]]
+        self._train_episode_history: List[np.ndarray]
+        self._test_episode_history: List[np.ndarray]
+
+        if self._representation == constants.PO_PIXEL:
+            self._train_episode_partial_history: List[np.ndarray]
+            self._test_episode_partial_history: List[np.ndarray]
+
+        self._episode_timeout = episode_timeout or np.inf
+        self._frame_stack = frame_stack or 1
+        self._scaling = scaling
+        self._field_x = field_x
+        self._field_y = field_y
+        self._grayscale = grayscale
+        self._batch_dimension = batch_dimension
+        self._torch_axes = torch_axes
 
     @abc.abstractmethod
     def step(self, action: int) -> Tuple[float, Tuple[int, int]]:
