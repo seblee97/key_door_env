@@ -8,7 +8,6 @@ import unittest
 import warnings
 
 import numpy as np
-import yaml
 from key_door import curriculum_env, key_door_env
 
 try:
@@ -50,14 +49,14 @@ class TestIntegration(unittest.TestCase):
         self._save_path = save_path
 
     def setUp(self):
-        self._tabular_env = key_door_env.KeyDoorGridworld(
+        self._tabular_env = key_door_env.KeyDoorEnv(
             map_ascii_path=TEST_MAP_PATH,
             map_yaml_path=TEST_MAP_YAML_PATH,
             representation="agent_position",
             episode_timeout=1000,
         )
 
-        self._pixel_env = key_door_env.KeyDoorGridworld(
+        self._pixel_env = key_door_env.KeyDoorEnv(
             map_ascii_path=TEST_MAP_PATH,
             map_yaml_path=TEST_MAP_YAML_PATH,
             representation="pixel",
