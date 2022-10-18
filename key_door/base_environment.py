@@ -7,7 +7,7 @@ from key_door import constants
 
 
 class BaseEnvironment(abc.ABC):
-    """Base class for RL environments.
+    """Base class for RL environments in key-door framework.
 
     Abstract methods:
         step: takes action produces reward and next state.
