@@ -1,16 +1,13 @@
 import copy
 import itertools
-import re
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
-import yaml
-from matplotlib.pyplot import sca
 
 from key_door import base_environment, constants, utils
 
 
-class KeyDoorGridworld(base_environment.BaseEnvironment):
+class KeyDoorEnv(base_environment.BaseEnvironment):
     """Grid world environment with multiple rooms.
     Between each room is a door, that requires a key to unlock.
     """
@@ -37,6 +34,7 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
             representation: agent_position (for tabular) or pixel
                 (for function approximation).
             episode_timeout: number of steps before episode automatically terminates.
+            frame_stack: number of frames to stack together in representation.
             scaling: optional integer (for use with pixel representations)
                 specifying how much to expand state by.
             field_x: integer (required for use with partial observability
@@ -45,6 +43,9 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
             field_y: integer (required for use with partial observability
                 in pixel representations) specifying how many pixels in each y
                 direction the agent can see.
+            grayscale: whether to grayscale representation.
+            batch_dimension: whether to add dummy batch dimension to representation.
+            torch_axes: whether to use torch (else tf) axis ordering.
         """
 
         self._key_ids = [constants.KEYS]
@@ -73,6 +74,13 @@ class KeyDoorGridworld(base_environment.BaseEnvironment):
     def _setup_environment(
         self, map_yaml_path: str, map_ascii_path: Optional[str] = None
     ):
+        """Setup environment according to geometry of ascii file
+        and settings of yaml file.
+
+        Args:
+            map_ascii_path: path to txt or other ascii file with map specifications.
+            map_yaml_path: path to yaml file with map settings (reward locations etc.)
+        """
 
         if map_ascii_path is not None:
             self._map = utils.parse_map_outline(
