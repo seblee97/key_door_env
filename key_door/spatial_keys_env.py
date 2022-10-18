@@ -5,6 +5,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import yaml
+
 from key_door import base_environment, constants, utils
 
 
@@ -19,6 +20,7 @@ class SpatialKeysEnv(base_environment.BaseEnvironment):
         map_yaml_path: str,
         representation: str,
         episode_timeout: Optional[Union[int, None]] = None,
+        frame_stack: Optional[Union[int, None]] = None,
         scaling: Optional[int] = 1,
         field_x: Optional[int] = 1,
         field_y: Optional[int] = 1,
@@ -44,31 +46,19 @@ class SpatialKeysEnv(base_environment.BaseEnvironment):
                 direction the agent can see.
         """
 
-        self._active: bool = False
-
-        self._training: bool
-        self._episode_step_count: int
-        self._representation = representation
-
-        self._agent_position: np.ndarray
         self._key_ids = [constants.GOLD, constants.SILVER]
 
-        self._train_episode_position_history: List[List[int]]
-        self._test_episode_position_history: List[List[int]]
-        self._train_episode_history: List[np.ndarray]
-        self._test_episode_history: List[np.ndarray]
-
-        if self._representation == constants.PO_PIXEL:
-            self._train_episode_partial_history: List[np.ndarray]
-            self._test_episode_partial_history: List[np.ndarray]
-
-        self._episode_timeout = episode_timeout or np.inf
-        self._scaling = scaling
-        self._field_x = field_x
-        self._field_y = field_y
-        self._grayscale = grayscale
-        self._batch_dimension = batch_dimension
-        self._torch_axes = torch_axes
+        super().__init__(
+            representation=representation,
+            episode_timeout=episode_timeout,
+            frame_stack=frame_stack,
+            scaling=scaling,
+            field_x=field_x,
+            field_y=field_y,
+            grayscale=grayscale,
+            batch_dimension=batch_dimension,
+            torch_axes=torch_axes,
+        )
 
         self._setup_environment(
             map_ascii_path=map_ascii_path, map_yaml_path=map_yaml_path
