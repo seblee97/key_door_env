@@ -219,17 +219,17 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
         for i, key in enumerate(self._correct_keys):
             if key == 0:
-                if self._key_1_positions[i] in self._silver_key_positions:
+                if self._key_1_positions[i] == self._silver_key_positions[i]:
                     self._silver_key_indices.append(i)
                 else:
                     self._gold_key_indices.append(i)
             else:
-                if self._key_2_positions[i] in self._silver_key_positions:
+                if self._key_2_positions[i] == self._silver_key_positions[i]:
                     self._silver_key_indices.append(i)
                 else:
                     self._gold_key_indices.append(i)
 
-            if self._key_1_position_index_mapping[i] in self._silver_key_positions:
+            if self._key_1_positions[i] == self._silver_key_positions[i]:
                 self._silver_key_1s.append(i)
                 self._gold_key_2s.append(i)
             else:
@@ -638,7 +638,8 @@ class PosnerEnv(base_environment.BaseEnvironment):
                 and not self._keys_2_state[key_1_index]
             ):
                 self._keys_1_state[key_1_index] = 1
-                self._current_cue = next(self._cues)
+                if self._cue_format is not None:
+                    self._current_cue = next(self._cues)
                 if key_1_index in self._silver_key_1s:
                     silver_key_collected = True
                 else:
@@ -651,7 +652,8 @@ class PosnerEnv(base_environment.BaseEnvironment):
                 and not self._keys_1_state[key_2_index]
             ):
                 self._keys_2_state[key_2_index] = 1
-                self._current_cue = next(self._cues)
+                if self._cue_format is not None:
+                    self._current_cue = next(self._cues)
                 if key_2_index in self._silver_key_2s:
                     silver_key_collected = True
                 else:
