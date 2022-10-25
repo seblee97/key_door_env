@@ -19,8 +19,13 @@ class PosnerEnv(base_environment.BaseEnvironment):
     may be indicated by a visual cue that lines the bottom of the map.
     """
 
-    SILVER_INDEX = 0
-    GOLD_INDEX = 1
+    BLUE_RGB = [0.0, 0.0, 1.0]
+    GREEN_RGB = [0.0, 0.5, 0.0]
+    RED_RGB = [1.0, 0.0, 0.0]
+    GOLD_RGB = [1.0, 0.843, 0.0]
+    SILVER_RGB = [0.753, 0.753, 0.753]
+    BLACK_RGB = [0.0, 0.0, 0.0]
+    WHITE_RGB = [1.0, 1.0, 1.0]
 
     def __init__(
         self,
@@ -132,6 +137,10 @@ class PosnerEnv(base_environment.BaseEnvironment):
                 ), "cue line (size of cue * number of cues) must be less than width of map"
         else:
             self._cue_line_depth = self._cue_specification[constants.CUE_LINE_DEPTH]
+        self._default_cue_line = np.tile(
+            self.BLACK_RGB,
+            [self._cue_line_depth, self._skeleton_shape[1], 1],
+        )
 
         self._rewards = utils.setup_reward_statistics(
             reward_positions, reward_statistics
@@ -159,9 +168,8 @@ class PosnerEnv(base_environment.BaseEnvironment):
                     ):
                         self._silver_key_positions = silver_key_positions
                         self._gold_key_positions = gold_key_positions
-                        raise NotImplementedError
-                        self._silver_key_indices = None
-                        self._gold_key_indices = None
+                        self._default_color_indices()
+
                     else:
                         self._color_keys_randomly()
             elif self._reward_by == constants.POSITION:
@@ -172,9 +180,8 @@ class PosnerEnv(base_environment.BaseEnvironment):
                     ):
                         self._silver_key_positions = silver_key_positions
                         self._gold_key_positions = gold_key_positions
-                        raise NotImplementedError
-                        self._silver_key_indices = None
-                        self._gold_key_indices = None
+                        self._default_color_indices()
+
                     else:
                         self._color_keys_randomly()
                 else:
@@ -203,30 +210,64 @@ class PosnerEnv(base_environment.BaseEnvironment):
         such that each index is 0 or 1 with equal probability."""
         return [0 if s < 0.5 else 1 for s in np.random.random(size=self._total_rewards)]
 
+    def _default_color_indices(self):
+        self._silver_key_indices = []
+        self._gold_key_indices = []
+
+        self._silver_key_1s, self._silver_key_2s = [], []
+        self._gold_key_1s, self._gold_key_2s = [], []
+
+        for i, key in enumerate(self._correct_keys):
+            if key == 0:
+                if self._key_1_positions[i] in self._silver_key_positions:
+                    self._silver_key_indices.append(i)
+                else:
+                    self._gold_key_indices.append(i)
+            else:
+                if self._key_2_positions[i] in self._silver_key_positions:
+                    self._silver_key_indices.append(i)
+                else:
+                    self._gold_key_indices.append(i)
+
+            if self._key_1_position_index_mapping[i] in self._silver_key_positions:
+                self._silver_key_1s.append(i)
+                self._gold_key_2s.append(i)
+            else:
+                self._silver_key_2s.append(i)
+                self._gold_key_1s.append(i)
+
     def _color_keys_randomly(self) -> None:
         """Assigns two disjoint lists of equal length such that the set of the two equals
         the set of key_1_positions and key_2_positions. Allocation is random."""
         self._silver_key_positions, self._gold_key_positions = [], []
         self._silver_key_indices, self._gold_key_indices = [], []
+        self._silver_key_1s, self._silver_key_2s = [], []
+        self._gold_key_1s, self._gold_key_2s = [], []
         indices = np.random.random(size=self._total_rewards) < 0.5
 
         for i, (key_1, key_2) in enumerate(
             zip(self._key_1_positions.values(), self._key_2_positions.values())
         ):
             if indices[i]:
+                # key 1 is silver, key 2 is gold
                 self._silver_key_positions.append(key_1)
                 self._gold_key_positions.append(key_2)
+                self._silver_key_1s.append(i)
+                self._gold_key_2s.append(i)
                 if self._correct_keys[i] == 0:
                     self._silver_key_indices.append(i)
                 else:
                     self._gold_key_indices.append(i)
             else:
+                # key 1 is gold, key 2 is silver
                 self._silver_key_positions.append(key_2)
                 self._gold_key_positions.append(key_1)
+                self._silver_key_2s.append(i)
+                self._gold_key_1s.append(i)
                 if self._correct_keys[i] == 1:
-                    self._gold_key_indices.append(i)
-                else:
                     self._silver_key_indices.append(i)
+                else:
+                    self._gold_key_indices.append(i)
 
     def average_values_over_positional_states(
         self, values: Dict[Tuple[int], float]
@@ -345,7 +386,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
                 )
             # show reward in green
             for reward in reward_iterate:
-                skeleton[reward[::-1]] = [0.0, 0.5, 0.0]
+                skeleton[reward[::-1]] = self.GREEN_RGB
 
         silver_keys = keys[constants.SILVER]
         if silver_keys is not None:
@@ -373,7 +414,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
             # show silver key in silver
             for key_position in silver_keys_iterate:
-                skeleton[tuple(key_position[::-1])] = constants.SILVER_RGB
+                skeleton[tuple(key_position[::-1])] = self.SILVER_RGB
 
         gold_keys = keys[constants.GOLD]
         if gold_keys is not None:
@@ -401,7 +442,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
             # show gold key in gold
             for key_position in gold_keys_iterate:
-                skeleton[tuple(key_position[::-1])] = constants.GOLD_RGB
+                skeleton[tuple(key_position[::-1])] = self.GOLD_RGB
 
         if doors is not None:
             if isinstance(doors, str):
@@ -413,7 +454,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
                     raise ValueError(f"Doors keyword {doors} not identified.")
             # show door in red
             for door in doors_iterate:
-                skeleton[tuple(door[::-1])] = [1.0, 0.0, 0.0]
+                skeleton[tuple(door[::-1])] = self.RED_RGB
 
         if agent is not None:
             if isinstance(agent, str):
@@ -424,43 +465,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
             else:
                 agent_position = agent
             # show agent in blue
-            skeleton[tuple(agent_position[::-1])] = [0.0, 0.0, 1.0]
-
-        if cue is not None:
-            if isinstance(cue, str):
-                if cue == constants.STATE:
-                    if self._cue_format is not None:
-                        if self._cue_format == constants.POSNER:
-                            cue_index = max(
-                                len(np.trim_zeros(self._silver_keys_state)),
-                                len(np.trim_zeros(self._gold_keys_state)),
-                            )
-                            if cue_index < len(self._cues):
-                                cue_line = self._cues[cue_index]
-                            else:
-                                cue_line = np.tile(
-                                    constants.BLACK_PIXEL,
-                                    [self._cue_line_depth, skeleton.shape[1], 1],
-                                )
-                        elif self._cue_format == constants.SINGLE_BAR:
-                            cue_index = max(
-                                len(np.trim_zeros(self._silver_keys_state)),
-                                len(np.trim_zeros(self._gold_keys_state)),
-                            )
-                            if cue_index < len(self._cues):
-                                cue_line = self._cues[cue_index]
-                            else:
-                                cue_line = np.tile(
-                                    constants.BLACK_PIXEL,
-                                    [self._cue_line_depth, skeleton.shape[1], 1],
-                                )
-                    else:
-                        cue_line = np.tile(
-                            constants.BLACK_PIXEL,
-                            [self._cue_line_depth, skeleton.shape[1], 1],
-                        )
-
-                    skeleton = np.vstack((cue_line, skeleton))
+            skeleton[tuple(agent_position[::-1])] = self.BLUE_RGB
 
         return skeleton
 
@@ -532,6 +537,9 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
         return state
 
+    def _rolling_cued_skeleton(self):
+        return np.vstack((self._current_cue, self._rolling_env_skeleton))
+
     def get_state_representation(
         self,
         tuple_state: Optional[Tuple] = None,
@@ -548,8 +556,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
             )
         elif self._representation in [constants.PIXEL, constants.PO_PIXEL]:
             if tuple_state is None:
-                agent_position = self._agent_position
-                state = self._env_skeleton()  # H x W x C
+                state = self._rolling_cued_skeleton()  # H x W x C
             else:
                 agent_position = tuple_state[:2]
                 silver_keys = tuple_state[2 : 2 + len(self._silver_key_positions)]
@@ -587,18 +594,32 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
     def _move_agent(self, delta: np.ndarray) -> float:
         """Move agent. If provisional new position is a wall, no-op."""
+        provisional_old_position = copy.deepcopy(self._agent_position)
         provisional_new_position = self._agent_position + delta
 
         moving_into_wall = tuple(provisional_new_position) in self._wall_state_space
-        locked_door = tuple(provisional_new_position) in self._door_positions
+        moving_into_door = tuple(provisional_new_position) in self._door_positions
+        moving_from_door = tuple(provisional_old_position) in self._door_positions
 
-        if locked_door:
+        if moving_into_door:
             door_index = self._door_positions.index(tuple(provisional_new_position))
             if self._keys_1_state[door_index] or self._keys_2_state[door_index]:
-                locked_door = False
+                moving_into_door = False
 
-        if not moving_into_wall and not locked_door:
+        if not moving_into_wall and not moving_into_door:
             self._agent_position = provisional_new_position
+            # change color of relevant squares in rolling_env_skeleton
+            self._rolling_env_skeleton[
+                tuple(self._agent_position[::-1])
+            ] = self.BLUE_RGB
+            if moving_from_door:
+                self._rolling_env_skeleton[
+                    tuple(provisional_old_position[::-1])
+                ] = self.RED_RGB
+            else:
+                self._rolling_env_skeleton[
+                    tuple(provisional_old_position[::-1])
+                ] = self.WHITE_RGB
 
         key_1_index = self._key_1_position_index_mapping.get(
             tuple(self._agent_position)
@@ -607,27 +628,49 @@ class PosnerEnv(base_environment.BaseEnvironment):
             tuple(self._agent_position)
         )
 
+        silver_key_collected = False
+        gold_key_collected = False
+
         if key_1_index is not None:
+            key_index = key_1_index
             if (
                 not self._keys_1_state[key_1_index]
                 and not self._keys_2_state[key_1_index]
             ):
                 self._keys_1_state[key_1_index] = 1
-                if key_1_index in self._silver_key_indices:
-                    self._silver_keys_state[key_1_index] = 1
+                self._current_cue = next(self._cues)
+                if key_1_index in self._silver_key_1s:
+                    silver_key_collected = True
                 else:
-                    self._gold_keys_state[key_1_index] = 1
+                    gold_key_collected = True
 
         if key_2_index is not None:
+            key_index = key_2_index
             if (
                 not self._keys_2_state[key_2_index]
                 and not self._keys_1_state[key_2_index]
             ):
                 self._keys_2_state[key_2_index] = 1
-                if key_2_index in self._silver_key_indices:
-                    self._silver_keys_state[key_2_index] = 1
+                self._current_cue = next(self._cues)
+                if key_2_index in self._silver_key_2s:
+                    silver_key_collected = True
                 else:
-                    self._gold_keys_state[key_2_index] = 1
+                    gold_key_collected = True
+
+        if silver_key_collected:
+            self._silver_keys_state[key_index] = 1
+            # silver key collected, remove gold key from rolling_env_skeleton
+            gold_key_pos = self._gold_key_positions[key_index]
+            self._rolling_env_skeleton[tuple(gold_key_pos[::-1])] = self.WHITE_RGB
+            if key_index not in self._silver_key_indices:
+                self._accessible_rewards -= 1
+        elif gold_key_collected:
+            self._gold_keys_state[key_index] = 1
+            # gold key collected, remove silver key from rolling_env_skeleton
+            silver_key_pos = self._silver_key_positions[key_index]
+            self._rolling_env_skeleton[tuple(silver_key_pos[::-1])] = self.WHITE_RGB
+            if key_index not in self._gold_key_indices:
+                self._accessible_rewards -= 1
 
         return self._compute_reward()
 
@@ -650,30 +693,33 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
         reward = self._move_agent(delta=self.DELTAS[action])
         new_state = self.get_state_representation()
-        skeleton = self._env_skeleton()
 
         self._active = self._remain_active(reward=reward)
         self._episode_step_count += 1
+
+        full_skeleton = self._rolling_cued_skeleton()
 
         if self._training:
             self._visitation_counts[self._agent_position[1]][
                 self._agent_position[0]
             ] += 1
             self._train_episode_position_history.append(tuple(self._agent_position))
-            self._train_episode_history.append(skeleton)
+            self._train_episode_history.append(full_skeleton)
             if self._representation == constants.PO_PIXEL:
                 self._train_episode_partial_history.append(
                     self._partial_observation(
-                        state=skeleton, agent_position=self._agent_position
+                        state=full_skeleton,
+                        agent_position=self._agent_position,
                     )
                 )
         else:
             self._test_episode_position_history.append(tuple(self._agent_position))
-            self._test_episode_history.append(skeleton)
+            self._test_episode_history.append(full_skeleton)
             if self._representation == constants.PO_PIXEL:
                 self._test_episode_partial_history.append(
                     self._partial_observation(
-                        state=skeleton, agent_position=self._agent_position
+                        state=full_skeleton,
+                        agent_position=self._agent_position,
                     )
                 )
 
@@ -723,7 +769,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
         for i, _ in enumerate(self._correct_keys):
             cue_line = np.tile(
-                constants.BLACK_PIXEL, [self._cue_line_depth, self._map.shape[1], 1]
+                self.BLACK_RGB, [self._cue_line_depth, self._map.shape[1], 1]
             )
             distractor_directions = np.repeat(
                 np.random.random(self._num_cues) > 0.5, self._cue_size
@@ -731,23 +777,23 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
             cue_line[
                 :, self._cue_size * np.where(distractor_directions), :
-            ] = constants.SILVER_RGB
+            ] = self.SILVER_RGB
             cue_line[
                 :, self._cue_size * np.where(distractor_directions == False), :
-            ] = constants.GOLD_RGB
+            ] = self.GOLD_RGB
 
             random_boolean = np.random.random() < cue_conditional
 
             if i in self._silver_key_indices:
                 if random_boolean:
-                    cue_pixel = constants.SILVER_RGB
+                    cue_pixel = self.SILVER_RGB
                 else:
-                    cue_pixel = constants.GOLD_RGB
+                    cue_pixel = self.GOLD_RGB
             else:
                 if random_boolean:
-                    cue_pixel = constants.GOLD_RGB
+                    cue_pixel = self.GOLD_RGB
                 else:
-                    cue_pixel = constants.SILVER_RGB
+                    cue_pixel = self.SILVER_RGB
 
             cue_line[
                 :,
@@ -759,7 +805,9 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
             cues.append(cue_line)
 
-        return cues
+        cues.append(self._default_cue_line)
+
+        return iter(cues)
 
     def _setup_block_cues(self):
         cues = []
@@ -771,27 +819,29 @@ class PosnerEnv(base_environment.BaseEnvironment):
         # 2 * silver_cue_validity * gold_cue_validity - gold_cue_validity
         # ) / (silver_cue_validity + gold_cue_validity - 1)
 
-        for i, correct_key in enumerate(self._correct_keys):
+        for i, _ in enumerate(self._correct_keys):
 
             random_boolean = np.random.random() < cue_conditional
 
             if i in self._silver_key_indices:
                 if random_boolean:
-                    pixel = constants.SILVER_RGB
+                    pixel = self.SILVER_RGB
                 else:
-                    pixel = constants.GOLD_RGB
+                    pixel = self.GOLD_RGB
             else:
                 if random_boolean:
-                    pixel = constants.GOLD_RGB
+                    pixel = self.GOLD_RGB
                 else:
-                    pixel = constants.SILVER_RGB
+                    pixel = self.SILVER_RGB
 
             cue_line = np.tile(
                 pixel, [self._cue_line_depth, self._skeleton_shape[1], 1]
             )
             cues.append(cue_line)
 
-        return cues
+        cues.append(self._default_cue_line)
+
+        return iter(cues)
 
     def reset_environment(
         self, train: bool = True, map_yaml_path: Optional[str] = None
@@ -858,32 +908,40 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
         if self._cue_format == constants.POSNER:
             self._cues = self._setup_posner_cues()
+            self._current_cue = next(self._cues)
         elif self._cue_format == constants.SINGLE_BAR:
             self._cues = self._setup_block_cues()
+            self._current_cue = next(self._cues)
+        else:
+            self._current_cue = self._default_cue_line
 
-        initial_state = self.get_state_representation()
         skeleton = self._env_skeleton()
+        full_skeleton = np.vstack((self._current_cue, skeleton))
 
         if train:
             self._train_episode_position_history = [tuple(self._agent_position)]
-            self._train_episode_history = [skeleton]
+            self._train_episode_history = [full_skeleton]
             self._visitation_counts[self._agent_position[1]][
                 self._agent_position[0]
             ] += 1
             if self._representation == constants.PO_PIXEL:
                 self._train_episode_partial_history = [
                     self._partial_observation(
-                        state=skeleton, agent_position=self._agent_position
+                        state=full_skeleton, agent_position=self._agent_position
                     )
                 ]
         else:
             self._test_episode_position_history = [tuple(self._agent_position)]
-            self._test_episode_history = [skeleton]
+            self._test_episode_history = [full_skeleton]
             if self._representation == constants.PO_PIXEL:
                 self._test_episode_partial_history = [
                     self._partial_observation(
-                        state=skeleton, agent_position=self._agent_position
+                        state=full_skeleton, agent_position=self._agent_position
                     )
                 ]
+
+        self._rolling_env_skeleton = skeleton
+
+        initial_state = self.get_state_representation()
 
         return initial_state
