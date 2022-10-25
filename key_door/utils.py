@@ -114,30 +114,50 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
     keys_change_color = map_data[constants.KEYS_CHANGE_COLOR]
 
     if map_data.get(f"{constants.SILVER}_{constants.KEY_POSITIONS}"):
-        silver_key_positions = parse_x_positions(
-            map_yaml_path=map_yaml_path,
-            data_key=f"{constants.SILVER}_{constants.KEY_POSITIONS}",
-        )
+        silver_key_positions = {
+            i: pos
+            for i, pos in enumerate(
+                parse_x_positions(
+                    map_yaml_path=map_yaml_path,
+                    data_key=f"{constants.SILVER}_{constants.KEY_POSITIONS}",
+                )
+            )
+        }
     else:
         silver_key_positions = None
 
     if map_data.get(f"{constants.GOLD}_{constants.KEY_POSITIONS}"):
-        gold_key_positions = parse_x_positions(
-            map_yaml_path=map_yaml_path,
-            data_key=f"{constants.GOLD}_{constants.KEY_POSITIONS}",
-        )
+        gold_key_positions = {
+            i: pos
+            for i, pos in enumerate(
+                parse_x_positions(
+                    map_yaml_path=map_yaml_path,
+                    data_key=f"{constants.GOLD}_{constants.KEY_POSITIONS}",
+                )
+            )
+        }
     else:
         gold_key_positions = None
 
-    key_1_positions = parse_x_positions(
-        map_yaml_path=map_yaml_path,
-        data_key=f"{constants.KEY}_1_{constants.POSITIONS}",
-    )
+    key_1_positions = {
+        i: pos
+        for i, pos in enumerate(
+            parse_x_positions(
+                map_yaml_path=map_yaml_path,
+                data_key=f"{constants.KEY}_1_{constants.POSITIONS}",
+            )
+        )
+    }
 
-    key_2_positions = parse_x_positions(
-        map_yaml_path=map_yaml_path,
-        data_key=f"{constants.KEY}_2_{constants.POSITIONS}",
-    )
+    key_2_positions = {
+        i: pos
+        for i, pos in enumerate(
+            parse_x_positions(
+                map_yaml_path=map_yaml_path,
+                data_key=f"{constants.KEY}_2_{constants.POSITIONS}",
+            )
+        )
+    }
 
     correct_keys_change = map_data[constants.CORRECT_KEYS_CHANGE]
 
