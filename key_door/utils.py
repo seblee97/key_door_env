@@ -3,6 +3,7 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import yaml
+
 from key_door import constants
 
 
@@ -109,13 +110,33 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
 
     start_positions = [tuple(map_data[constants.START_POSITION])]
 
-    silver_key_positions = parse_x_positions(
+    reward_by = map_data[constants.REWARD_BY]
+    keys_change_color = map_data[constants.KEYS_CHANGE_COLOR]
+
+    if map_data.get(f"{constants.SILVER}_{constants.KEY_POSITIONS}"):
+        silver_key_positions = parse_x_positions(
+            map_yaml_path=map_yaml_path,
+            data_key=f"{constants.SILVER}_{constants.KEY_POSITIONS}",
+        )
+    else:
+        silver_key_positions = None
+
+    if map_data.get(f"{constants.GOLD}_{constants.KEY_POSITIONS}"):
+        gold_key_positions = parse_x_positions(
+            map_yaml_path=map_yaml_path,
+            data_key=f"{constants.GOLD}_{constants.KEY_POSITIONS}",
+        )
+    else:
+        gold_key_positions = None
+
+    key_1_positions = parse_x_positions(
         map_yaml_path=map_yaml_path,
-        data_key=f"{constants.SILVER}_{constants.KEY_POSITIONS}",
+        data_key=f"{constants.KEY}_1_{constants.POSITIONS}",
     )
-    gold_key_positions = parse_x_positions(
+
+    key_2_positions = parse_x_positions(
         map_yaml_path=map_yaml_path,
-        data_key=f"{constants.GOLD}_{constants.KEY_POSITIONS}",
+        data_key=f"{constants.KEY}_2_{constants.POSITIONS}",
     )
 
     correct_keys_change = map_data[constants.CORRECT_KEYS_CHANGE]
@@ -147,17 +168,21 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
     ), "maximally one start position 'S' should be specified in ASCII map."
 
     assert len(door_positions) == len(
-        silver_key_positions
+        key_1_positions
     ), "number of key positions must equal number of door positions."
 
     assert len(door_positions) == len(
-        gold_key_positions
+        key_2_positions
     ), "number of key positions must equal number of door positions."
 
     return (
         start_positions[0],
+        reward_by,
         silver_key_positions,
         gold_key_positions,
+        key_1_positions,
+        key_2_positions,
+        keys_change_color,
         correct_keys_change,
         door_positions,
         reward_positions,
@@ -351,8 +376,8 @@ def configure_state_space(map_outline, key_positions, reward_positions):
 
 def configure_posner_state_space(
     map_outline,
-    silver_key_positions,
-    gold_key_positions,
+    key_1_positions,
+    key_2_positions,
     reward_positions,
 ):
     """Get state space for the environment from the parsed map.
@@ -362,11 +387,11 @@ def configure_posner_state_space(
     wall_indices = np.where(map_outline == 1)
 
     positional_state_space = list(zip(state_indices[1], state_indices[0]))
-    silver_key_possession_state_space = list(
-        itertools.product([0, 1], repeat=len(silver_key_positions))
+    key_1_possession_state_space = list(
+        itertools.product([0, 1], repeat=len(key_1_positions))
     )
-    gold_key_possession_state_space = list(
-        itertools.product([0, 1], repeat=len(gold_key_positions))
+    key_2_possession_state_space = list(
+        itertools.product([0, 1], repeat=len(key_2_positions))
     )
     rewards_received_state_space = list(
         itertools.product([0, 1], repeat=len(reward_positions))
@@ -375,8 +400,8 @@ def configure_posner_state_space(
         i[0] + i[1] + i[2] + i[3]
         for i in itertools.product(
             positional_state_space,
-            silver_key_possession_state_space,
-            gold_key_possession_state_space,
+            key_1_possession_state_space,
+            key_2_possession_state_space,
             rewards_received_state_space,
         )
     ]
@@ -385,8 +410,8 @@ def configure_posner_state_space(
 
     return (
         positional_state_space,
-        silver_key_possession_state_space,
-        gold_key_possession_state_space,
+        key_1_possession_state_space,
+        key_2_possession_state_space,
         rewards_received_state_space,
         state_space,
         wall_state_space,
