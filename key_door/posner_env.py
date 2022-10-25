@@ -111,6 +111,13 @@ class PosnerEnv(base_environment.BaseEnvironment):
             self._cue_specification,
         ) = utils.parse_posner_map_positions(map_yaml_path)
 
+        self._key_1_position_index_mapping = {
+            pos: i for i, pos in self._key_1_positions.items()
+        }
+        self._key_2_position_index_mapping = {
+            pos: i for i, pos in self._key_2_positions.items()
+        }
+
         self._cue_format = self._cue_specification[constants.CUE_FORMAT]
         if self._cue_format is not None:
             self._cue_validity = self._cue_specification[constants.CUE_VALIDITY]
@@ -152,11 +159,11 @@ class PosnerEnv(base_environment.BaseEnvironment):
                     ):
                         self._silver_key_positions = silver_key_positions
                         self._gold_key_positions = gold_key_positions
+                        raise NotImplementedError
+                        self._silver_key_indices = None
+                        self._gold_key_indices = None
                     else:
-                        (
-                            self._silver_key_positions,
-                            self._gold_key_positions,
-                        ) = self._color_keys_randomly()
+                        self._color_keys_randomly()
             elif self._reward_by == constants.POSITION:
                 if not self._keys_change_color:
                     if (
@@ -165,11 +172,11 @@ class PosnerEnv(base_environment.BaseEnvironment):
                     ):
                         self._silver_key_positions = silver_key_positions
                         self._gold_key_positions = gold_key_positions
+                        raise NotImplementedError
+                        self._silver_key_indices = None
+                        self._gold_key_indices = None
                     else:
-                        (
-                            self._silver_key_positions,
-                            self._gold_key_positions,
-                        ) = self._color_keys_randomly()
+                        self._color_keys_randomly()
                 else:
                     pass
             else:
@@ -196,21 +203,30 @@ class PosnerEnv(base_environment.BaseEnvironment):
         such that each index is 0 or 1 with equal probability."""
         return [0 if s < 0.5 else 1 for s in np.random.random(size=self._total_rewards)]
 
-    def _color_keys_randomly(self):
-        """Returns two disjoint lists of equal length such that the set of the two equals
+    def _color_keys_randomly(self) -> None:
+        """Assigns two disjoint lists of equal length such that the set of the two equals
         the set of key_1_positions and key_2_positions. Allocation is random."""
-        silver_keys, gold_keys = [], []
+        self._silver_key_positions, self._gold_key_positions = [], []
+        self._silver_key_indices, self._gold_key_indices = [], []
         indices = np.random.random(size=self._total_rewards) < 0.5
+
         for i, (key_1, key_2) in enumerate(
-            zip(self._key_1_positions, self._key_2_positions)
+            zip(self._key_1_positions.values(), self._key_2_positions.values())
         ):
             if indices[i]:
-                silver_keys.append(key_1)
-                gold_keys.append(key_2)
+                self._silver_key_positions.append(key_1)
+                self._gold_key_positions.append(key_2)
+                if self._correct_keys[i] == 0:
+                    self._silver_key_indices.append(i)
+                else:
+                    self._gold_key_indices.append(i)
             else:
-                silver_keys.append(key_2)
-                gold_keys.append(key_1)
-        return silver_keys, gold_keys
+                self._silver_key_positions.append(key_2)
+                self._gold_key_positions.append(key_1)
+                if self._correct_keys[i] == 1:
+                    self._gold_key_indices.append(i)
+                else:
+                    self._silver_key_indices.append(i)
 
     def average_values_over_positional_states(
         self, values: Dict[Tuple[int], float]
@@ -357,7 +373,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
             # show silver key in silver
             for key_position in silver_keys_iterate:
-                skeleton[tuple(key_position[::-1])] = [0.753, 0.753, 0.753]
+                skeleton[tuple(key_position[::-1])] = constants.SILVER_RGB
 
         gold_keys = keys[constants.GOLD]
         if gold_keys is not None:
@@ -385,7 +401,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
 
             # show gold key in gold
             for key_position in gold_keys_iterate:
-                skeleton[tuple(key_position[::-1])] = [1.0, 0.843, 0.0]
+                skeleton[tuple(key_position[::-1])] = constants.GOLD_RGB
 
         if doors is not None:
             if isinstance(doors, str):
@@ -584,20 +600,34 @@ class PosnerEnv(base_environment.BaseEnvironment):
         if not moving_into_wall and not locked_door:
             self._agent_position = provisional_new_position
 
-        if tuple(self._agent_position) in self._key_1_positions:
-            key_index = self._key_1_positions.index(tuple(self._agent_position))
-            if not self._keys_1_state[key_index] and not self._keys_2_state[key_index]:
-                self._keys_1_state[key_index] = 1
-        if tuple(self._agent_position) in self._key_2_positions:
-            key_index = self._key_2_positions.index(tuple(self._agent_position))
-            if not self._keys_2_state[key_index] and not self._keys_1_state[key_index]:
-                self._keys_2_state[key_index] = 1
-        if tuple(self._agent_position) in self._silver_key_positions:
-            key_index = self._silver_key_positions.index(tuple(self._agent_position))
-            self._silver_keys_state[key_index] = 1
-        if tuple(self._agent_position) in self._gold_key_positions:
-            key_index = self._gold_key_positions.index(tuple(self._agent_position))
-            self._gold_keys_state[key_index] = 1
+        key_1_index = self._key_1_position_index_mapping.get(
+            tuple(self._agent_position)
+        )
+        key_2_index = self._key_2_position_index_mapping.get(
+            tuple(self._agent_position)
+        )
+
+        if key_1_index is not None:
+            if (
+                not self._keys_1_state[key_1_index]
+                and not self._keys_2_state[key_1_index]
+            ):
+                self._keys_1_state[key_1_index] = 1
+                if key_1_index in self._silver_key_indices:
+                    self._silver_keys_state[key_1_index] = 1
+                else:
+                    self._gold_keys_state[key_1_index] = 1
+
+        if key_2_index is not None:
+            if (
+                not self._keys_2_state[key_2_index]
+                and not self._keys_1_state[key_2_index]
+            ):
+                self._keys_2_state[key_2_index] = 1
+                if key_2_index in self._silver_key_indices:
+                    self._silver_keys_state[key_2_index] = 1
+                else:
+                    self._gold_keys_state[key_2_index] = 1
 
         return self._compute_reward()
 
@@ -691,7 +721,7 @@ class PosnerEnv(base_environment.BaseEnvironment):
         # 2 * silver_cue_validity * gold_cue_validity - gold_cue_validity
         # ) / (silver_cue_validity + gold_cue_validity - 1)
 
-        for i, correct_key in enumerate(self._correct_keys):
+        for i, _ in enumerate(self._correct_keys):
             cue_line = np.tile(
                 constants.BLACK_PIXEL, [self._cue_line_depth, self._map.shape[1], 1]
             )
@@ -705,28 +735,20 @@ class PosnerEnv(base_environment.BaseEnvironment):
             cue_line[
                 :, self._cue_size * np.where(distractor_directions == False), :
             ] = constants.GOLD_RGB
-            if correct_key == 0:
-                if self._key_1_positions[i] in self._silver_key_positions:
-                    if np.random.random() < cue_conditional:
-                        cue_pixel = constants.SILVER_RGB
-                    else:
-                        cue_pixel = constants.GOLD_RGB
-                elif self._key_1_positions[i] in self._gold_key_positions:
-                    if np.random.random() < cue_conditional:
-                        cue_pixel = constants.GOLD_RGB
-                    else:
-                        cue_pixel = constants.SILVER_RGB
-            elif correct_key == 1:
-                if self._key_2_positions[i] in self._silver_key_positions:
-                    if np.random.random() < cue_conditional:
-                        cue_pixel = constants.SILVER_RGB
-                    else:
-                        cue_pixel = constants.GOLD_RGB
-                elif self._key_2_positions[i] in self._gold_key_positions:
-                    if np.random.random() < cue_conditional:
-                        cue_pixel = constants.GOLD_RGB
-                    else:
-                        cue_pixel = constants.SILVER_RGB
+
+            random_boolean = np.random.random() < cue_conditional
+
+            if i in self._silver_key_indices:
+                if random_boolean:
+                    cue_pixel = constants.SILVER_RGB
+                else:
+                    cue_pixel = constants.GOLD_RGB
+            else:
+                if random_boolean:
+                    cue_pixel = constants.GOLD_RGB
+                else:
+                    cue_pixel = constants.SILVER_RGB
+
             cue_line[
                 :,
                 self._cue_size
@@ -750,28 +772,20 @@ class PosnerEnv(base_environment.BaseEnvironment):
         # ) / (silver_cue_validity + gold_cue_validity - 1)
 
         for i, correct_key in enumerate(self._correct_keys):
-            if correct_key == 0:
-                if self._key_1_positions[i] in self._silver_key_positions:
-                    if np.random.random() < cue_conditional:
-                        pixel = constants.SILVER_RGB
-                    else:
-                        pixel = constants.GOLD_RGB
-                elif self._key_1_positions[i] in self._gold_key_positions:
-                    if np.random.random() < cue_conditional:
-                        pixel = constants.GOLD_RGB
-                    else:
-                        pixel = constants.SILVER_RGB
-            elif correct_key == 1:
-                if self._key_2_positions[i] in self._silver_key_positions:
-                    if np.random.random() < cue_conditional:
-                        pixel = constants.SILVER_RGB
-                    else:
-                        pixel = constants.GOLD_RGB
-                elif self._key_2_positions[i] in self._gold_key_positions:
-                    if np.random.random() < cue_conditional:
-                        pixel = constants.GOLD_RGB
-                    else:
-                        pixel = constants.SILVER_RGB
+
+            random_boolean = np.random.random() < cue_conditional
+
+            if i in self._silver_key_indices:
+                if random_boolean:
+                    pixel = constants.SILVER_RGB
+                else:
+                    pixel = constants.GOLD_RGB
+            else:
+                if random_boolean:
+                    pixel = constants.GOLD_RGB
+                else:
+                    pixel = constants.SILVER_RGB
+
             cue_line = np.tile(
                 pixel, [self._cue_line_depth, self._skeleton_shape[1], 1]
             )
@@ -810,18 +824,12 @@ class PosnerEnv(base_environment.BaseEnvironment):
             self._correct_keys = self._random_correct_keys()
             if self._reward_by == constants.COLOR:
                 if self._keys_change_color:
-                    (
-                        self._silver_key_positions,
-                        self._gold_key_positions,
-                    ) = self._color_keys_randomly()
+                    self._color_keys_randomly()
                 else:
                     raise ValueError("Inconsistent configuration.")
             elif self._reward_by == constants.POSITION:
                 if self._keys_change_color:
-                    (
-                        self._silver_key_positions,
-                        self._gold_key_positions,
-                    ) = self._color_keys_randomly()
+                    self._color_keys_randomly()
                 else:
                     pass
             else:
