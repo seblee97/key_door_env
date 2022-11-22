@@ -664,15 +664,15 @@ class PosnerEnv(base_environment.BaseEnvironment):
             # silver key collected, remove gold key from rolling_env_skeleton
             gold_key_pos = self._gold_key_positions[key_index]
             self._rolling_env_skeleton[tuple(gold_key_pos[::-1])] = self.WHITE_RGB
-            if key_index not in self._silver_key_indices:
-                self._accessible_rewards -= 1
+            # if key_index not in self._silver_key_indices:
+            #     self._accessible_rewards -= 1
         elif gold_key_collected:
             self._gold_keys_state[key_index] = 1
             # gold key collected, remove silver key from rolling_env_skeleton
             silver_key_pos = self._silver_key_positions[key_index]
             self._rolling_env_skeleton[tuple(silver_key_pos[::-1])] = self.WHITE_RGB
-            if key_index not in self._gold_key_indices:
-                self._accessible_rewards -= 1
+            # if key_index not in self._gold_key_indices:
+            #     self._accessible_rewards -= 1
 
         return self._compute_reward()
 
