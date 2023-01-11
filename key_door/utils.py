@@ -91,7 +91,7 @@ def parse_map_positions(map_yaml_path: str) -> Tuple[List, List, List, List]:
     )
 
 
-def random_correct_keys(self, num_keys):
+def random_correct_keys(num_keys):
     """Returns list of length total_rewards (equivalently number of each key)
     such that each index is 0 or 1 with equal probability."""
     return [0 if s < 0.5 else 1 for s in np.random.random(size=num_keys)]
@@ -187,6 +187,7 @@ def parse_posner_map_positions(map_yaml_path: str) -> Tuple[List, List, List, Li
             constants.CUE_SIZE,
             constants.NUM_CUES,
             constants.CUE_LINE_DEPTH,
+            constants.CUE_INDEX,
         ]
     }
 
