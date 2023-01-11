@@ -4,8 +4,9 @@ from multiprocessing.sharedctypes import Value
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from dqn_zoo.key_door import base_environment, constants, utils
 from matplotlib.rcsetup import validate_color_or_auto
+
+from key_door import base_environment, constants, utils
 
 
 class PosnerEnv(base_environment.BaseEnvironment):
@@ -130,7 +131,9 @@ class PosnerEnv(base_environment.BaseEnvironment):
             if self._cue_format == constants.POSNER:
                 self._cue_size = self._cue_specification[constants.CUE_SIZE]
                 self._num_cues = self._cue_specification[constants.NUM_CUES]
-                self._cue_index = np.random.choice(self._num_cues)
+                self._cue_index = self._cue_specification.get(
+                    constants.CUE_INDEX, np.random.choice(self._num_cues)
+                )
 
                 assert (
                     self._cue_size * self._num_cues < self._map.shape[1]
