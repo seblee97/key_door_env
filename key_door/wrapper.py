@@ -77,8 +77,9 @@ class Wrapper(base_environment.BaseEnvironment):
         save_path: Optional[str] = None,
         dpi: Optional[int] = 60,
         format: str = "state",
+        annotate: str = None,
     ) -> None:
-        self._env.render(save_path=save_path, dpi=dpi, format=format)
+        self._env.render(save_path=save_path, dpi=dpi, format=format, annotate=annotate)
 
     def _env_skeleton(
         self,
